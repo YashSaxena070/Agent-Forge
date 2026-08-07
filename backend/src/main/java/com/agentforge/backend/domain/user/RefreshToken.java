@@ -1,7 +1,6 @@
-package com.agentforge.backend.domain.refreshtoken;
+package com.agentforge.backend.domain.user;
 
 import com.agentforge.backend.common.entity.BaseEntity;
-import com.agentforge.backend.domain.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 

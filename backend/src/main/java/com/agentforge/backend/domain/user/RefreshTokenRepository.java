@@ -1,6 +1,5 @@
-package com.agentforge.backend.domain.refreshtoken;
+package com.agentforge.backend.domain.user;
 
-import com.agentforge.backend.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
