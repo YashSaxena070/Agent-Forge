@@ -1,7 +1,8 @@
-package com.agentforge.backend.domain.entity;
+package com.agentforge.backend.domain.project;
 
 import com.agentforge.backend.common.entity.BaseEntity;
 import com.agentforge.backend.common.enums.ProjectStatus;
+import com.agentforge.backend.domain.organization.Organization;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,6 +1,5 @@
-package com.agentforge.backend.domain.repository;
+package com.agentforge.backend.domain.organization;
 
-import com.agentforge.backend.domain.entity.OrganizationMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;

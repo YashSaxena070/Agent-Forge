@@ -1,4 +1,4 @@
-package com.agentforge.backend.domain.entity;
+package com.agentforge.backend.domain.organization;
 
 import com.agentforge.backend.common.entity.BaseEntity;
 import jakarta.persistence.*;

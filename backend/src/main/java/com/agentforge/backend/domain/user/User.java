@@ -1,4 +1,4 @@
-package com.agentforge.backend.domain.entity;
+package com.agentforge.backend.domain.user;
 
 import com.agentforge.backend.common.enums.SystemRole;
 import com.agentforge.backend.common.enums.UserStatus;
