@@ -1,5 +1,6 @@
 package com.agentforge.backend.security.jwt;
 
+import com.agentforge.backend.domain.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 @Service
@@ -40,46 +43,50 @@ public class JwtService {
 
     }
 
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(User user) {
 
-        return Jwts.builder()
+        Map<String, Object> claims = new HashMap<>();
 
-                .subject(email)
+        claims.put("userId", user.getId());
 
-                .issuedAt(new Date())
+        claims.put("role", user.getSystemRole().name());
 
-                .expiration(new Date(
-
-                        System.currentTimeMillis()
-                                + properties.accessTokenExpiration()
-
-                ))
-
-                .signWith(getSigningKey())
-
-                .compact();
+        return generateToken(
+                claims,
+                user.getEmail(),
+                properties.accessTokenExpiration()
+        );
 
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(User user) {
+
+        return generateToken(
+                new HashMap<>(),
+                user.getEmail(),
+                properties.refreshTokenExpiration()
+        );
+
+    }
+
+    private String generateToken(
+            Map<String, Object> claims,
+            String subject,
+            Long expiration
+    ) {
 
         return Jwts.builder()
-
-                .subject(email)
-
+                .claims(claims)
+                .subject(subject)
                 .issuedAt(new Date())
-
-                .expiration(new Date(
-
-                        System.currentTimeMillis()
-                                + properties.refreshTokenExpiration()
-
-                ))
-
+                .expiration(
+                        new Date(
+                                System.currentTimeMillis()
+                                        + expiration
+                        )
+                )
                 .signWith(getSigningKey())
-
                 .compact();
-
     }
 
     public boolean isTokenValid(

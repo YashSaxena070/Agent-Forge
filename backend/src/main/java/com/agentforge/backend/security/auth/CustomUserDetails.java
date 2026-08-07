@@ -1,5 +1,6 @@
 package com.agentforge.backend.security.auth;
 
+import com.agentforge.backend.common.enums.UserStatus;
 import com.agentforge.backend.domain.user.User;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +60,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.isEmailVerified();
+        return user.getStatus() == UserStatus.ACTIVE;
     }
 
 }

@@ -1,5 +1,7 @@
 package com.agentforge.backend.auth.controller;
 
+import com.agentforge.backend.auth.dto.JwtResponse;
+import com.agentforge.backend.auth.dto.LoginRequest;
 import com.agentforge.backend.auth.dto.RegisterRequest;
 import com.agentforge.backend.auth.dto.UserResponse;
 import com.agentforge.backend.auth.service.AuthService;
@@ -30,27 +32,34 @@ public class AuthController {
             RegisterRequest request
 
     ) {
-
         UserResponse response = authService.register(request);
-
         return ResponseEntity
-
                 .status(HttpStatus.CREATED)
-
                 .body(
-
                         ApiResponse.<Void>builder()
-
                                 .success(true)
-
                                 .message("User registered successfully.")
-
                                 .data(null)
-
                                 .timestamp(LocalDateTime.now())
-
                                 .build()
-
                 );
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<JwtResponse>> login(
+            @Valid
+            @RequestBody
+            LoginRequest request
+    ) {
+        JwtResponse response = authService.login(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.<JwtResponse>builder()
+                        .success(true)
+                        .message("Login successful.")
+                        .data(response)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
     }
 }
