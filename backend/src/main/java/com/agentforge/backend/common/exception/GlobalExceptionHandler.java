@@ -1,6 +1,8 @@
 package com.agentforge.backend.common.exception;
 
 import com.agentforge.backend.auth.exception.EmailAlreadyExistsException;
+import com.agentforge.backend.auth.exception.InvalidRefreshTokenException;
+import com.agentforge.backend.auth.exception.RefreshTokenReuseException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -124,6 +126,78 @@ public class GlobalExceptionHandler {
 
                 .body(response);
 
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(
+
+            InvalidRefreshTokenException exception,
+
+            HttpServletRequest request
+
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+
+                        .success(false)
+
+                        .status(
+                                HttpStatus.UNAUTHORIZED.value()
+                        )
+
+                        .error("Unauthorized")
+
+                        .message(exception.getMessage())
+
+                        .path(request.getRequestURI())
+
+                        .timestamp(
+                                LocalDateTime.now()
+                        )
+
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(response);
+    }
+
+    @ExceptionHandler(RefreshTokenReuseException.class)
+    public ResponseEntity<ErrorResponse> handleRefreshTokenReuse(
+
+            RefreshTokenReuseException exception,
+
+            HttpServletRequest request
+
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+
+                        .success(false)
+
+                        .status(
+                                HttpStatus.UNAUTHORIZED.value()
+                        )
+
+                        .error("Unauthorized")
+
+                        .message(
+                                "Refresh token is no longer valid."
+                        )
+
+                        .path(request.getRequestURI())
+
+                        .timestamp(
+                                LocalDateTime.now()
+                        )
+
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(response);
     }
 
 }

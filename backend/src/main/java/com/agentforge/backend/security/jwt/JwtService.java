@@ -12,6 +12,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -47,7 +48,7 @@ public class JwtService {
 
         Map<String, Object> claims = new HashMap<>();
 
-        claims.put("userId", user.getId());
+        claims.put("userId", user.getId().toString());
 
         claims.put("role", user.getSystemRole().name());
 
@@ -77,6 +78,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .claims(claims)
+                .id(UUID.randomUUID().toString())
                 .subject(subject)
                 .issuedAt(new Date())
                 .expiration(
@@ -103,6 +105,20 @@ public class JwtService {
 
                 !isTokenExpired(token);
 
+    }
+
+    public boolean isTokenValid(String token) {
+
+        try {
+
+            extractAllClaims(token);
+
+            return true;
+
+        } catch (Exception exception) {
+
+            return false;
+        }
     }
 
     private boolean isTokenExpired(
