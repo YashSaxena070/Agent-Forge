@@ -35,15 +35,20 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(entryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/v1/auth/logout-all"
-                        ).authenticated()
-                        .requestMatchers(
-                                "/api/v1/auth/**",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/refresh",
+                                "/api/v1/auth/logout",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/actuator/health"
                         ).permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/logout-all",
+                                "/api/v1/auth/me",
+                                "/api/v1/auth/sessions"
+                        ).authenticated()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)

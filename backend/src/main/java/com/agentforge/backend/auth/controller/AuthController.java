@@ -10,13 +10,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -164,6 +162,104 @@ public class AuthController {
 
                         .build()
 
+        );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<CurrentUserResponse>> me(
+
+            Authentication authentication
+
+    ) {
+
+        CustomUserDetails userDetails =
+                (CustomUserDetails)
+                        authentication.getPrincipal();
+
+        User user =
+                userDetails.getUser();
+
+        CurrentUserResponse response =
+                authService.getCurrentUser(user);
+
+        return ResponseEntity.ok(
+
+                ApiResponse.<CurrentUserResponse>builder()
+                        .success(true)
+                        .message("Current user retrieved successfully.")
+                        .data(response)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @GetMapping("/sessions")
+    public ResponseEntity<ApiResponse<List<SessionResponse>>> sessions(
+
+            Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-Refresh-Token",
+                    required = false
+            )
+            String currentRefreshToken
+
+    ) {
+
+        CustomUserDetails userDetails =
+                (CustomUserDetails)
+                        authentication.getPrincipal();
+
+        User user =
+                userDetails.getUser();
+
+        List<SessionResponse> sessions =
+                authService.getActiveSessions(
+                        user,
+                        currentRefreshToken
+                );
+
+        return ResponseEntity.ok(
+
+                ApiResponse.<List<SessionResponse>>builder()
+                        .success(true)
+                        .message("Active sessions retrieved successfully.")
+                        .data(sessions)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    public ResponseEntity<ApiResponse<Void>> revokeSession(
+
+            @PathVariable
+            String sessionId,
+
+            Authentication authentication
+
+    ) {
+
+        CustomUserDetails userDetails =
+                (CustomUserDetails)
+                        authentication.getPrincipal();
+
+        User user =
+                userDetails.getUser();
+
+        authService.revokeSession(
+                user,
+                sessionId
+        );
+
+        return ResponseEntity.ok(
+
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("Session revoked successfully.")
+                        .data(null)
+                        .timestamp(LocalDateTime.now())
+                        .build()
         );
     }
 

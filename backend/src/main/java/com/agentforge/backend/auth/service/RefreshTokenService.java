@@ -16,4 +16,6 @@ public interface RefreshTokenService {
     RefreshToken findValidToken(String token);
 
     RefreshToken findToken(String token);
+
+    void revokeSession(User user, String sessionId);
 }

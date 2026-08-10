@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -112,4 +113,43 @@ public class RefreshTokenServiceImpl
 
                 return refreshToken;
         }
+
+    @Override
+    @Transactional
+    public void revokeSession(
+            User user,
+            String sessionId
+    ) {
+
+        RefreshToken refreshToken =
+                refreshTokenRepository
+                        .findById(
+                                UUID.fromString(sessionId)
+                        )
+                        .orElseThrow(() ->
+                                new InvalidRefreshTokenException(
+                                        "Session not found."
+                                )
+                        );
+
+        /*
+         * Security check:
+         *
+         * A user must only be able to revoke
+         * their own sessions.
+         */
+        if (!refreshToken
+                .getUser()
+                .getId()
+                .equals(user.getId())) {
+
+            throw new InvalidRefreshTokenException(
+                    "Session does not belong to the user."
+            );
+        }
+
+        refreshToken.setRevoked(true);
+
+        refreshTokenRepository.save(refreshToken);
+    }
 }

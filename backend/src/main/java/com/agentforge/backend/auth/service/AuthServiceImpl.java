@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -229,6 +230,61 @@ public class AuthServiceImpl implements AuthService {
                                 / 1000)
 
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CurrentUserResponse getCurrentUser(User user) {
+
+        return authMapper.toCurrentUserResponse(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SessionResponse> getActiveSessions(
+            User user,
+            String currentRefreshToken
+    ) {
+
+        List<RefreshToken> tokens =
+                refreshTokenService.getActiveTokens(user);
+
+        return tokens.stream()
+                .map(token -> {
+
+                    boolean current =
+                            token.getToken()
+                                    .equals(currentRefreshToken);
+
+                    SessionResponse response =
+                            authMapper.toSessionResponse(token);
+
+                    return SessionResponse.builder()
+                            .id(response.id())
+                            .deviceName(response.deviceName())
+                            .deviceType(response.deviceType())
+                            .ipAddress(response.ipAddress())
+                            .userAgent(response.userAgent())
+                            .createdAt(response.createdAt())
+                            .lastUsedAt(response.lastUsedAt())
+                            .expiresAt(response.expiresAt())
+                            .current(current)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void revokeSession(
+            User user,
+            String sessionId
+    ) {
+
+        refreshTokenService.revokeSession(
+                user,
+                sessionId
+        );
     }
 
     private String getClientIpAddress(
