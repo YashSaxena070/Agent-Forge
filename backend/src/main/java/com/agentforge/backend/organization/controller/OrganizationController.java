@@ -1,0 +1,140 @@
+package com.agentforge.backend.organization.controller;
+
+import com.agentforge.backend.common.response.ApiResponse;
+import com.agentforge.backend.domain.user.User;
+import com.agentforge.backend.organization.dto.CreateOrganizationRequest;
+import com.agentforge.backend.organization.dto.OrganizationResponse;
+import com.agentforge.backend.organization.service.OrganizationService;
+import com.agentforge.backend.security.auth.CustomUserDetails;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/organizations")
+@RequiredArgsConstructor
+public class OrganizationController {
+
+    private final OrganizationService organizationService;
+
+    @PostMapping
+    public ResponseEntity<
+            ApiResponse<OrganizationResponse>
+            > createOrganization(
+
+            @Valid
+            @RequestBody
+            CreateOrganizationRequest request,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        OrganizationResponse response =
+                organizationService.createOrganization(
+                        request,
+                        user
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse
+                                .<OrganizationResponse>builder()
+                                .success(true)
+                                .message(
+                                        "Organization created successfully."
+                                )
+                                .data(response)
+                                .timestamp(
+                                        LocalDateTime.now()
+                                )
+                                .build()
+                );
+    }
+
+    @GetMapping
+    public ResponseEntity<
+            ApiResponse<List<OrganizationResponse>>
+            > getMyOrganizations(
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        List<OrganizationResponse> organizations =
+                organizationService
+                        .getMyOrganizations(user);
+
+        return ResponseEntity.ok(
+                ApiResponse
+                        .<List<OrganizationResponse>>builder()
+                        .success(true)
+                        .message(
+                                "Organizations retrieved successfully."
+                        )
+                        .data(organizations)
+                        .timestamp(
+                                LocalDateTime.now()
+                        )
+                        .build()
+        );
+    }
+
+    @GetMapping("/{organizationId}")
+    public ResponseEntity<
+            ApiResponse<OrganizationResponse>
+            > getOrganization(
+
+            @PathVariable
+            UUID organizationId,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        OrganizationResponse response =
+                organizationService.getOrganization(
+                        organizationId,
+                        user
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse
+                        .<OrganizationResponse>builder()
+                        .success(true)
+                        .message(
+                                "Organization retrieved successfully."
+                        )
+                        .data(response)
+                        .timestamp(
+                                LocalDateTime.now()
+                        )
+                        .build()
+        );
+    }
+
+    private User getUser(
+            Authentication authentication
+    ) {
+
+        CustomUserDetails userDetails =
+                (CustomUserDetails)
+                        authentication.getPrincipal();
+
+        return userDetails.getUser();
+    }
+}
