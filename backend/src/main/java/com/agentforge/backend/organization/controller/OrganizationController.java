@@ -4,6 +4,7 @@ import com.agentforge.backend.common.response.ApiResponse;
 import com.agentforge.backend.domain.user.User;
 import com.agentforge.backend.organization.dto.CreateOrganizationRequest;
 import com.agentforge.backend.organization.dto.OrganizationResponse;
+import com.agentforge.backend.organization.dto.UpdateOrganizationRequest;
 import com.agentforge.backend.organization.service.OrganizationService;
 import com.agentforge.backend.security.auth.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -123,6 +124,73 @@ public class OrganizationController {
                         .timestamp(
                                 LocalDateTime.now()
                         )
+                        .build()
+        );
+    }
+
+    @PutMapping("/{organizationId}")
+    public ResponseEntity<
+            ApiResponse<OrganizationResponse>
+            > updateOrganization(
+
+            @PathVariable
+            UUID organizationId,
+
+            @Valid
+            @RequestBody
+            UpdateOrganizationRequest request,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        OrganizationResponse response =
+                organizationService.updateOrganization(
+                        organizationId,
+                        request,
+                        user
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse
+                        .<OrganizationResponse>builder()
+                        .success(true)
+                        .message(
+                                "Organization updated successfully."
+                        )
+                        .data(response)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @DeleteMapping("/{organizationId}")
+    public ResponseEntity<ApiResponse<Void>> deleteOrganization(
+
+            @PathVariable
+            UUID organizationId,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        organizationService.deleteOrganization(
+                organizationId,
+                user
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message(
+                                "Organization deleted successfully."
+                        )
+                        .data(null)
+                        .timestamp(LocalDateTime.now())
                         .build()
         );
     }

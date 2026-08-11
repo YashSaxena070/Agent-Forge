@@ -6,11 +6,13 @@ import com.agentforge.backend.domain.organization.OrganizationMember;
 import com.agentforge.backend.domain.user.User;
 import com.agentforge.backend.organization.dto.CreateOrganizationRequest;
 import com.agentforge.backend.organization.dto.OrganizationResponse;
+import com.agentforge.backend.organization.dto.UpdateOrganizationRequest;
 import com.agentforge.backend.organization.repository.OrganizationMemberRepository;
 import com.agentforge.backend.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.agentforge.backend.organization.exception.OrganizationNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,8 +24,8 @@ public class OrganizationServiceImpl
 
     private final OrganizationRepository organizationRepository;
 
-    private final OrganizationMemberRepository
-            organizationMemberRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
+    private final OrganizationAccessService organizationAccessService;
 
     @Override
     @Transactional
@@ -88,6 +90,65 @@ public class OrganizationServiceImpl
         return toResponse(organization);
     }
 
+    @Override
+    public OrganizationResponse updateOrganization(UUID organizationId, UpdateOrganizationRequest request, User user) {
+        organizationAccessService.requireRole(
+                organizationId,
+                user,
+                OrganizationRole.OWNER,
+                OrganizationRole.ADMIN
+        );
+
+        Organization organization =
+                organizationRepository
+                        .findById(organizationId)
+                        .orElseThrow(() ->
+                                new OrganizationNotFoundException(
+                                        "Organization not found."
+                                )
+                        );
+
+        organization.setName(request.name());
+
+        organization.setDescription(
+                request.description()
+        );
+
+        organization.setLogoUrl(
+                request.logoUrl()
+        );
+
+        Organization updated =
+                organizationRepository.save(organization);
+
+        return toResponse(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteOrganization(
+            UUID organizationId,
+            User user
+    ) {
+
+        organizationAccessService.requireRole(
+                organizationId,
+                user,
+                OrganizationRole.OWNER
+        );
+
+        Organization organization =
+                organizationRepository
+                        .findById(organizationId)
+                        .orElseThrow(() ->
+                                new OrganizationNotFoundException(
+                                        "Organization not found."
+                                )
+                        );
+
+        organizationRepository.delete(organization);
+    }
+
     private Organization getOrganizationIfMember(
             UUID organizationId,
             User user
@@ -117,6 +178,7 @@ public class OrganizationServiceImpl
 
         return organization;
     }
+
 
     private String generateUniqueSlug(
             String name
