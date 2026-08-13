@@ -3,6 +3,7 @@ package com.agentforge.backend.common.exception;
 import com.agentforge.backend.auth.exception.EmailAlreadyExistsException;
 import com.agentforge.backend.auth.exception.InvalidRefreshTokenException;
 import com.agentforge.backend.auth.exception.RefreshTokenReuseException;
+import com.agentforge.backend.organization.exception.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -197,6 +198,124 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
+                .body(response);
+    }
+
+    @ExceptionHandler(OrganizationNotFoundException.class)
+    public ResponseEntity<ErrorResponse>
+    handleOrganizationNotFound(
+            OrganizationNotFoundException exception,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(HttpStatus.NOT_FOUND.value())
+                        .error("Not Found")
+                        .message(exception.getMessage())
+                        .path(request.getRequestURI())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(
+            OrganizationAccessDeniedException.class
+    )
+    public ResponseEntity<ErrorResponse>
+    handleOrganizationAccessDenied(
+            OrganizationAccessDeniedException exception,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(HttpStatus.FORBIDDEN.value())
+                        .error("Forbidden")
+                        .message(exception.getMessage())
+                        .path(request.getRequestURI())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(response);
+    }
+
+    @ExceptionHandler(
+            InvitationNotFoundException.class
+    )
+    public ResponseEntity<ErrorResponse>
+    handleInvitationNotFound(
+            InvitationNotFoundException exception,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(HttpStatus.NOT_FOUND.value())
+                        .error("Not Found")
+                        .message(exception.getMessage())
+                        .path(request.getRequestURI())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(
+            InvalidInvitationException.class
+    )
+    public ResponseEntity<ErrorResponse>
+    handleInvalidInvitation(
+            InvalidInvitationException exception,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .error("Bad Request")
+                        .message(exception.getMessage())
+                        .path(request.getRequestURI())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
+    }
+
+    @ExceptionHandler(
+            MemberAlreadyExistsException.class
+    )
+    public ResponseEntity<ErrorResponse>
+    handleMemberAlreadyExists(
+            MemberAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(HttpStatus.CONFLICT.value())
+                        .error("Conflict")
+                        .message(exception.getMessage())
+                        .path(request.getRequestURI())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(response);
     }
 
