@@ -4,9 +4,8 @@ import com.agentforge.backend.common.enums.OrganizationRole;
 import com.agentforge.backend.domain.organization.Organization;
 import com.agentforge.backend.domain.organization.OrganizationMember;
 import com.agentforge.backend.domain.user.User;
-import com.agentforge.backend.organization.dto.CreateOrganizationRequest;
-import com.agentforge.backend.organization.dto.OrganizationResponse;
-import com.agentforge.backend.organization.dto.UpdateOrganizationRequest;
+import com.agentforge.backend.organization.dto.*;
+import com.agentforge.backend.organization.exception.OrganizationAccessDeniedException;
 import com.agentforge.backend.organization.repository.OrganizationMemberRepository;
 import com.agentforge.backend.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
@@ -177,6 +176,320 @@ public class OrganizationServiceImpl
         }
 
         return organization;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MemberResponse> getMembers(
+            UUID organizationId,
+            User user
+    ) {
+
+        Organization organization =
+                organizationAccessService.getOrganization(
+                        organizationId,
+                        user
+                );
+
+        return organizationMemberRepository
+                .findAllByOrganization(organization)
+                .stream()
+                .map(this::toMemberResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void changeMemberRole(
+            UUID organizationId,
+            UUID memberId,
+            ChangeMemberRoleRequest request,
+            User user
+    ) {
+
+        organizationAccessService.requireRole(
+                organizationId,
+                user,
+                OrganizationRole.OWNER,
+                OrganizationRole.ADMIN
+        );
+
+        Organization organization =
+                organizationAccessService.getOrganization(
+                        organizationId,
+                        user
+                );
+
+        OrganizationMember targetMember =
+                organizationMemberRepository
+                        .findByIdAndOrganization(
+                                memberId,
+                                organization
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Organization member not found."
+                                )
+                        );
+
+        /*
+         * OWNER cannot be changed through this API.
+         */
+        if (targetMember.getRole()
+                == OrganizationRole.OWNER) {
+
+            throw new OrganizationAccessDeniedException(
+                    "Owner role cannot be changed here."
+            );
+        }
+
+        /*
+         * OWNER cannot be assigned through
+         * normal role management.
+         */
+        if (request.role()
+                == OrganizationRole.OWNER) {
+
+            throw new OrganizationAccessDeniedException(
+                    "Use ownership transfer to assign OWNER role."
+            );
+        }
+
+        /*
+         * ADMIN must not be able to promote
+         * another member to ADMIN.
+         *
+         * Only OWNER can manage ADMIN roles.
+         */
+        if (request.role()
+                == OrganizationRole.ADMIN) {
+
+            organizationAccessService.requireRole(
+                    organizationId,
+                    user,
+                    OrganizationRole.OWNER
+            );
+        }
+
+        targetMember.setRole(
+                request.role()
+        );
+
+        organizationMemberRepository.save(
+                targetMember
+        );
+    }
+
+    @Override
+    @Transactional
+    public void removeMember(
+            UUID organizationId,
+            UUID memberId,
+            User user
+    ) {
+
+        organizationAccessService.requireRole(
+                organizationId,
+                user,
+                OrganizationRole.OWNER,
+                OrganizationRole.ADMIN
+        );
+
+        Organization organization =
+                organizationAccessService.getOrganization(
+                        organizationId,
+                        user
+                );
+
+        OrganizationMember targetMember =
+                organizationMemberRepository
+                        .findByIdAndOrganization(
+                                memberId,
+                                organization
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Organization member not found."
+                                )
+                        );
+
+        /*
+         * Owner cannot be removed.
+         */
+        if (targetMember.getRole()
+                == OrganizationRole.OWNER) {
+
+            throw new OrganizationAccessDeniedException(
+                    "The organization owner cannot be removed."
+            );
+        }
+
+        /*
+         * ADMIN cannot remove another ADMIN.
+         */
+        if (targetMember.getRole()
+                == OrganizationRole.ADMIN) {
+
+            organizationAccessService.requireRole(
+                    organizationId,
+                    user,
+                    OrganizationRole.OWNER
+            );
+        }
+
+        organizationMemberRepository.delete(
+                targetMember
+        );
+    }
+
+    @Override
+    @Transactional
+    public void transferOwnership(
+            UUID organizationId,
+            TransferOwnershipRequest request,
+            User user
+    ) {
+
+        /*
+         * Only current owner can transfer ownership.
+         */
+        organizationAccessService.requireRole(
+                organizationId,
+                user,
+                OrganizationRole.OWNER
+        );
+
+        Organization organization =
+                organizationAccessService.getOrganization(
+                        organizationId,
+                        user
+                );
+
+        OrganizationMember currentOwner =
+                organizationMemberRepository
+                        .findByOrganizationAndUser(
+                                organization,
+                                user
+                        )
+                        .orElseThrow(() ->
+                                new OrganizationAccessDeniedException(
+                                        "Current owner membership not found."
+                                )
+                        );
+
+        OrganizationMember newOwner =
+                organizationMemberRepository
+                        .findByIdAndOrganization(
+                                request.memberId(),
+                                organization
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "New owner member not found."
+                                )
+                        );
+
+        if (currentOwner.getId()
+                .equals(newOwner.getId())) {
+
+            throw new OrganizationAccessDeniedException(
+                    "You are already the owner."
+            );
+        }
+
+        /*
+         * Atomic ownership transfer:
+         *
+         * OLD OWNER -> ADMIN
+         * NEW OWNER -> OWNER
+         */
+        currentOwner.setRole(
+                OrganizationRole.ADMIN
+        );
+
+        newOwner.setRole(
+                OrganizationRole.OWNER
+        );
+
+        organizationMemberRepository.save(
+                currentOwner
+        );
+
+        organizationMemberRepository.save(
+                newOwner
+        );
+    }
+
+    @Override
+    @Transactional
+    public void leaveOrganization(
+            UUID organizationId,
+            User user
+    ) {
+
+        Organization organization =
+                organizationAccessService.getOrganization(
+                        organizationId,
+                        user
+                );
+
+        OrganizationMember membership =
+                organizationMemberRepository
+                        .findByOrganizationAndUser(
+                                organization,
+                                user
+                        )
+                        .orElseThrow(() ->
+                                new OrganizationAccessDeniedException(
+                                        "You are not a member of this organization."
+                                )
+                        );
+
+        /*
+         * Owner cannot leave.
+         *
+         * Ownership must first be transferred.
+         */
+        if (membership.getRole()
+                == OrganizationRole.OWNER) {
+
+            throw new OrganizationAccessDeniedException(
+                    "Owner must transfer ownership before leaving."
+            );
+        }
+
+        organizationMemberRepository.delete(
+                membership
+        );
+    }
+
+
+    private MemberResponse toMemberResponse(
+            OrganizationMember member
+    ) {
+
+        User memberUser =
+                member.getUser();
+
+        return MemberResponse.builder()
+
+                .id(member.getId())
+
+                .userId(memberUser.getId())
+
+                .fullName(memberUser.getFullName())
+
+                .email(memberUser.getEmail())
+
+                .role(member.getRole())
+
+                .emailVerified(
+                        memberUser.isEmailVerified()
+                )
+
+                .joinedAt(member.getCreatedAt())
+
+                .build();
     }
 
 

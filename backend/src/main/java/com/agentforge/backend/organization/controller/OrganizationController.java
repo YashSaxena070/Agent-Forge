@@ -2,9 +2,7 @@ package com.agentforge.backend.organization.controller;
 
 import com.agentforge.backend.common.response.ApiResponse;
 import com.agentforge.backend.domain.user.User;
-import com.agentforge.backend.organization.dto.CreateOrganizationRequest;
-import com.agentforge.backend.organization.dto.OrganizationResponse;
-import com.agentforge.backend.organization.dto.UpdateOrganizationRequest;
+import com.agentforge.backend.organization.dto.*;
 import com.agentforge.backend.organization.service.OrganizationService;
 import com.agentforge.backend.security.auth.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -188,6 +186,183 @@ public class OrganizationController {
                         .success(true)
                         .message(
                                 "Organization deleted successfully."
+                        )
+                        .data(null)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @GetMapping("/{organizationId}/members")
+    public ResponseEntity<
+            ApiResponse<List<MemberResponse>>
+            > getMembers(
+
+            @PathVariable
+            UUID organizationId,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        List<MemberResponse> members =
+                organizationService.getMembers(
+                        organizationId,
+                        user
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse
+                        .<List<MemberResponse>>builder()
+                        .success(true)
+                        .message(
+                                "Organization members retrieved successfully."
+                        )
+                        .data(members)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @PatchMapping(
+            "/{organizationId}/members/{memberId}/role"
+    )
+    public ResponseEntity<ApiResponse<Void>>
+    changeMemberRole(
+
+            @PathVariable
+            UUID organizationId,
+
+            @PathVariable
+            UUID memberId,
+
+            @Valid
+            @RequestBody
+            ChangeMemberRoleRequest request,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        organizationService.changeMemberRole(
+                organizationId,
+                memberId,
+                request,
+                user
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message(
+                                "Member role updated successfully."
+                        )
+                        .data(null)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @DeleteMapping(
+            "/{organizationId}/members/{memberId}"
+    )
+    public ResponseEntity<ApiResponse<Void>>
+    removeMember(
+
+            @PathVariable
+            UUID organizationId,
+
+            @PathVariable
+            UUID memberId,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        organizationService.removeMember(
+                organizationId,
+                memberId,
+                user
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message(
+                                "Member removed successfully."
+                        )
+                        .data(null)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @PostMapping(
+            "/{organizationId}/transfer-ownership"
+    )
+    public ResponseEntity<ApiResponse<Void>>
+    transferOwnership(
+
+            @PathVariable
+            UUID organizationId,
+
+            @Valid
+            @RequestBody
+            TransferOwnershipRequest request,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        organizationService.transferOwnership(
+                organizationId,
+                request,
+                user
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message(
+                                "Organization ownership transferred successfully."
+                        )
+                        .data(null)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @DeleteMapping("/{organizationId}/members/me")
+    public ResponseEntity<ApiResponse<Void>>
+    leaveOrganization(
+
+            @PathVariable
+            UUID organizationId,
+
+            Authentication authentication
+
+    ) {
+
+        User user = getUser(authentication);
+
+        organizationService.leaveOrganization(
+                organizationId,
+                user
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message(
+                                "You left the organization successfully."
                         )
                         .data(null)
                         .timestamp(LocalDateTime.now())

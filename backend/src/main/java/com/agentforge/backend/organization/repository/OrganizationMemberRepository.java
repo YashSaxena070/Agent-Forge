@@ -18,14 +18,21 @@ public interface OrganizationMemberRepository
             User user
     );
 
-    List<OrganizationMember>
-    findAllByUser(User user);
+    Optional<OrganizationMember> findByIdAndOrganization(
+            UUID id,
+            Organization organization
+    );
 
-    List<OrganizationMember>
-    findAllByOrganization(Organization organization);
+    List<OrganizationMember> findAllByUser(User user);
+
+    List<OrganizationMember> findAllByOrganization(Organization organization);
 
     boolean existsByOrganizationAndUser(
             Organization organization,
             User user
+    );
+
+    long countByOrganization(
+            Organization organization
     );
 }
