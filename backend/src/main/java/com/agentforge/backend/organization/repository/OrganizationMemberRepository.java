@@ -32,6 +32,11 @@ public interface OrganizationMemberRepository
             User user
     );
 
+    boolean existsByOrganizationAndUser_EmailIgnoreCase(
+            Organization organization,
+            String email
+    );
+
     long countByOrganization(
             Organization organization
     );

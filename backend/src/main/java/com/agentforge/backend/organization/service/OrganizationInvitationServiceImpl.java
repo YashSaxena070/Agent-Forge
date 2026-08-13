@@ -79,6 +79,22 @@ public class OrganizationInvitationServiceImpl
                         .trim()
                         .toLowerCase();
 
+        /*
+         * Check if user is already a member of the organization.
+         */
+        boolean alreadyMember =
+                organizationMemberRepository
+                        .existsByOrganizationAndUser_EmailIgnoreCase(
+                                organization,
+                                email
+                        );
+
+        if (alreadyMember) {
+
+            throw new MemberAlreadyExistsException(
+                    "User is already a member of this organization."
+            );
+        }
 
         /*
          * We can check pending invitation duplicates.
