@@ -4,6 +4,8 @@ import com.agentforge.backend.auth.exception.EmailAlreadyExistsException;
 import com.agentforge.backend.auth.exception.InvalidRefreshTokenException;
 import com.agentforge.backend.auth.exception.RefreshTokenReuseException;
 import com.agentforge.backend.organization.exception.*;
+import com.agentforge.backend.project.exception.ProjectNotFoundException;
+import com.agentforge.backend.project.exception.ProjectSlugAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -318,5 +320,69 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .body(response);
     }
+
+    @ExceptionHandler(ProjectNotFoundException.class)
+    public ResponseEntity<ErrorResponse>
+    handleProjectNotFound(
+            ProjectNotFoundException exception,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(
+                                HttpStatus.NOT_FOUND.value()
+                        )
+                        .error("Not Found")
+                        .message(
+                                exception.getMessage()
+                        )
+                        .path(
+                                request.getRequestURI()
+                        )
+                        .timestamp(
+                                LocalDateTime.now()
+                        )
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(
+            ProjectSlugAlreadyExistsException.class
+    )
+    public ResponseEntity<ErrorResponse>
+    handleProjectSlugExists(
+            ProjectSlugAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .success(false)
+                        .status(
+                                HttpStatus.CONFLICT.value()
+                        )
+                        .error("Conflict")
+                        .message(
+                                exception.getMessage()
+                        )
+                        .path(
+                                request.getRequestURI()
+                        )
+                        .timestamp(
+                                LocalDateTime.now()
+                        )
+                        .build();
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
+
 
 }
