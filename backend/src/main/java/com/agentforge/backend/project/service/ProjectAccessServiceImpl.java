@@ -1,10 +1,13 @@
 package com.agentforge.backend.project.service;
 
+import com.agentforge.backend.common.enums.OrganizationRole;
 import com.agentforge.backend.common.enums.ProjectRole;
 import com.agentforge.backend.common.enums.ProjectStatus;
+import com.agentforge.backend.domain.organization.OrganizationMember;
 import com.agentforge.backend.domain.project.Project;
 import com.agentforge.backend.domain.project.ProjectMember;
 import com.agentforge.backend.domain.user.User;
+import com.agentforge.backend.organization.repository.OrganizationMemberRepository;
 import com.agentforge.backend.project.exception.ProjectAccessDeniedException;
 import com.agentforge.backend.project.exception.ProjectNotFoundException;
 import com.agentforge.backend.project.repository.ProjectMemberRepository;
@@ -27,6 +30,9 @@ public class ProjectAccessServiceImpl
     private final ProjectMemberRepository
             projectMemberRepository;
 
+    private final OrganizationMemberRepository
+            organizationMemberRepository;
+
     @Override
     public ProjectMember getMembership(
             UUID projectId,
@@ -36,6 +42,13 @@ public class ProjectAccessServiceImpl
         Project project =
                 getProjectById(projectId);
 
+        /*
+         * Organization OWNER/ADMIN automatically
+         * have elevated project access.
+         *
+         * We still return the actual ProjectMember
+         * when one exists.
+         */
         return projectMemberRepository
                 .findByProjectAndUser(
                         project,
@@ -54,12 +67,15 @@ public class ProjectAccessServiceImpl
             User user
     ) {
 
-        getMembership(
-                projectId,
+        Project project =
+                getProjectById(projectId);
+
+        requireOrganizationAccess(
+                project,
                 user
         );
 
-        return getProjectById(projectId);
+        return project;
     }
 
     @Override
@@ -68,10 +84,30 @@ public class ProjectAccessServiceImpl
             User user
     ) {
 
-        getMembership(
-                projectId,
+        Project project =
+                getProjectById(projectId);
+
+        /*
+         * Organization OWNER and ADMIN can access
+         * all projects inside their organization.
+         */
+        if (hasOrganizationManagementAccess(
+                project,
                 user
-        );
+        )) {
+            return;
+        }
+
+        projectMemberRepository
+                .findByProjectAndUser(
+                        project,
+                        user
+                )
+                .orElseThrow(() ->
+                        new ProjectAccessDeniedException(
+                                "You are not a member of this project."
+                        )
+                );
     }
 
     @Override
@@ -81,20 +117,53 @@ public class ProjectAccessServiceImpl
             ProjectRole... allowedRoles
     ) {
 
+        Project project =
+                getProjectById(projectId);
+
+        /*
+         * Organization OWNER has complete
+         * project access.
+         */
+        if (hasOrganizationOwnerAccess(
+                project,
+                user
+        )) {
+            return;
+        }
+
+        /*
+         * Organization ADMIN can manage projects.
+         */
+        if (hasOrganizationAdminAccess(
+                project,
+                user
+        )) {
+
+            boolean projectAdminAllowed =
+                    Arrays.asList(allowedRoles)
+                            .contains(
+                                    ProjectRole.PROJECT_ADMIN
+                            );
+
+            if (projectAdminAllowed) {
+                return;
+            }
+        }
+
         ProjectMember membership =
-                getMembership(
-                        projectId,
-                        user
-                );
+                projectMemberRepository
+                        .findByProjectAndUser(
+                                project,
+                                user
+                        )
+                        .orElseThrow(() ->
+                                new ProjectAccessDeniedException(
+                                        "You are not a member of this project."
+                                )
+                        );
 
-        ProjectRole currentRole =
-                membership.getRole();
-
-        boolean allowed =
-                Arrays.asList(allowedRoles)
-                        .contains(currentRole);
-
-        if (!allowed) {
+        if (!Arrays.asList(allowedRoles)
+                .contains(membership.getRole())) {
 
             throw new ProjectAccessDeniedException(
                     "You do not have permission to perform this action."
@@ -109,16 +178,121 @@ public class ProjectAccessServiceImpl
             ProjectRole... roles
     ) {
 
-        ProjectMember membership =
-                getMembership(
-                        projectId,
+        Project project =
+                getProjectById(projectId);
+
+        if (hasOrganizationOwnerAccess(
+                project,
+                user
+        )) {
+            return true;
+        }
+
+        if (hasOrganizationAdminAccess(
+                project,
+                user
+        )) {
+
+            return Arrays.asList(roles)
+                    .contains(
+                            ProjectRole.PROJECT_ADMIN
+                    );
+        }
+
+        return projectMemberRepository
+                .findByProjectAndUser(
+                        project,
+                        user
+                )
+                .map(member ->
+                        Arrays.asList(roles)
+                                .contains(
+                                        member.getRole()
+                                )
+                )
+                .orElse(false);
+    }
+
+    private void requireOrganizationAccess(
+            Project project,
+            User user
+    ) {
+
+        if (hasOrganizationManagementAccess(
+                project,
+                user
+        )) {
+            return;
+        }
+
+        boolean projectMember =
+                projectMemberRepository
+                        .existsByProjectAndUser(
+                                project,
+                                user
+                        );
+
+        if (!projectMember) {
+
+            throw new ProjectAccessDeniedException(
+                    "You do not have access to this project."
+            );
+        }
+    }
+
+    private boolean hasOrganizationManagementAccess(
+            Project project,
+            User user
+    ) {
+
+        return hasOrganizationOwnerAccess(
+                project,
+                user
+        )
+                ||
+                hasOrganizationAdminAccess(
+                        project,
+                        user
+                );
+    }
+
+    private boolean hasOrganizationOwnerAccess(
+            Project project,
+            User user
+    ) {
+
+        return getOrganizationRole(
+                project,
+                user
+        ) == OrganizationRole.OWNER;
+    }
+
+    private boolean hasOrganizationAdminAccess(
+            Project project,
+            User user
+    ) {
+
+        OrganizationRole role =
+                getOrganizationRole(
+                        project,
                         user
                 );
 
-        return Arrays.asList(roles)
-                .contains(
-                        membership.getRole()
-                );
+        return role == OrganizationRole.ADMIN;
+    }
+
+    private OrganizationRole getOrganizationRole(
+            Project project,
+            User user
+    ) {
+
+        return organizationMemberRepository
+                .findByOrganizationAndUser(
+                        project.getOrganization(),
+                        user
+                )
+                .map(OrganizationMember::getRole)
+                .orElse(null);
     }
 
     private Project getProjectById(

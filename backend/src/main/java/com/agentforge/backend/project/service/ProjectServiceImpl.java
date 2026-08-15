@@ -31,6 +31,7 @@ public class ProjectServiceImpl
 
     private final OrganizationAccessService organizationAccessService;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectAccessService projectAccessService;
 
     @Override
     @Transactional
@@ -123,17 +124,18 @@ public class ProjectServiceImpl
             User user
     ) {
 
-        Organization organization =
-                organizationAccessService.getOrganization(
-                        organizationId,
+        Project project =
+                projectAccessService.getProject(
+                        projectId,
                         user
                 );
 
-        Project project =
-                findProject(
-                        projectId,
-                        organization
-                );
+        if (!project.getOrganization()
+                .getId()
+                .equals(organizationId)) {
+
+            throw new ProjectNotFoundException("Project not found.");
+        }
 
         return toResponse(project);
     }
@@ -147,28 +149,21 @@ public class ProjectServiceImpl
             User user
     ) {
 
-        /*
-         * Only OWNER and ADMIN can modify
-         * project metadata for now.
-         */
-        organizationAccessService.requireRole(
-                organizationId,
-                user,
-                OrganizationRole.OWNER,
-                OrganizationRole.ADMIN
-        );
-
-        Organization organization =
-                organizationAccessService.getOrganization(
-                        organizationId,
+        Project project =
+                projectAccessService.getProject(
+                        projectId,
                         user
                 );
 
-        Project project =
-                findProject(
-                        projectId,
-                        organization
-                );
+        // Ensure project belongs to the organization from URL
+        if (!project.getOrganization()
+                .getId()
+                .equals(organizationId)) {
+
+            throw new ProjectNotFoundException(
+                    "Project not found."
+            );
+        }
 
         project.setName(
                 request.name()
@@ -191,24 +186,21 @@ public class ProjectServiceImpl
             User user
     ) {
 
-        organizationAccessService.requireRole(
-                organizationId,
-                user,
-                OrganizationRole.OWNER,
-                OrganizationRole.ADMIN
-        );
-
-        Organization organization =
-                organizationAccessService.getOrganization(
-                        organizationId,
+        Project project =
+                projectAccessService.getProject(
+                        projectId,
                         user
                 );
 
-        Project project =
-                findProject(
-                        projectId,
-                        organization
-                );
+        // Ensure project belongs to the organization from URL
+        if (!project.getOrganization()
+                .getId()
+                .equals(organizationId)) {
+
+            throw new ProjectNotFoundException(
+                    "Project not found."
+            );
+        }
 
         project.setStatus(
                 ProjectStatus.ARCHIVED
@@ -224,25 +216,21 @@ public class ProjectServiceImpl
             UUID projectId,
             User user
     ) {
-
-        organizationAccessService.requireRole(
-                organizationId,
-                user,
-                OrganizationRole.OWNER,
-                OrganizationRole.ADMIN
-        );
-
-        Organization organization =
-                organizationAccessService.getOrganization(
-                        organizationId,
+        Project project =
+                projectAccessService.getProject(
+                        projectId,
                         user
                 );
 
-        Project project =
-                findProject(
-                        projectId,
-                        organization
-                );
+        // Ensure project belongs to the organization from URL
+        if (!project.getOrganization()
+                .getId()
+                .equals(organizationId)) {
+
+            throw new ProjectNotFoundException(
+                    "Project not found."
+            );
+        }
 
         /*
          * Soft delete.
