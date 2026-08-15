@@ -1,9 +1,11 @@
 package com.agentforge.backend.project.service;
 
 import com.agentforge.backend.common.enums.OrganizationRole;
+import com.agentforge.backend.common.enums.ProjectRole;
 import com.agentforge.backend.common.enums.ProjectStatus;
 import com.agentforge.backend.domain.organization.Organization;
 import com.agentforge.backend.domain.project.Project;
+import com.agentforge.backend.domain.project.ProjectMember;
 import com.agentforge.backend.domain.user.User;
 import com.agentforge.backend.organization.service.OrganizationAccessService;
 import com.agentforge.backend.project.dto.CreateProjectRequest;
@@ -11,6 +13,7 @@ import com.agentforge.backend.project.dto.ProjectResponse;
 import com.agentforge.backend.project.dto.UpdateProjectRequest;
 import com.agentforge.backend.project.exception.ProjectNotFoundException;
 import com.agentforge.backend.project.exception.ProjectSlugAlreadyExistsException;
+import com.agentforge.backend.project.repository.ProjectMemberRepository;
 import com.agentforge.backend.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,8 +29,8 @@ public class ProjectServiceImpl
 
     private final ProjectRepository projectRepository;
 
-    private final OrganizationAccessService
-            organizationAccessService;
+    private final OrganizationAccessService organizationAccessService;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Override
     @Transactional
@@ -74,6 +77,17 @@ public class ProjectServiceImpl
 
         Project saved =
                 projectRepository.save(project);
+
+        ProjectMember projectMember =
+                ProjectMember.builder()
+                        .project(saved)
+                        .user(user)
+                        .role(ProjectRole.PROJECT_ADMIN)
+                        .build();
+
+        projectMemberRepository.save(
+                projectMember
+        );
 
         return toResponse(saved);
     }
