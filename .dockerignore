@@ -9,3 +9,4 @@ __pycache__
 apps/frontend/.next
 apps/frontend/node_modules
 backend/target
+

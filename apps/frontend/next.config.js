@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -18,6 +20,8 @@ const nextConfig = {
     ];
   },
   webpack(config) {
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    config.resolve.alias['@/lib/utils'] = path.resolve(__dirname, 'src/lib/utils/index.ts');
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
