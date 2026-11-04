@@ -92,9 +92,13 @@ include = ["apps*", "services*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "T20", "PTH", "ERA", "PD", "RET", "PER", "ARG", "PTH", "FLY", "NPY", "TD", "TRY", "ASYNC", "DTZ", "EXE", "ISC", "ICN", "LOG", "RSE", "PIE", "TID", "Q"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "PERF", "ASYNC"]
 ignore = ["S101", "S311", "S603", "S607", "B008", "C901", "T201", "T203", "ARG001", "ARG002"]
-per-file-ignores = {"tests/*" = ["S101", "S311", "S603", "S607"]}
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S311", "S603", "S607"]
 
 [tool.ruff.format]
 quote-style = "double"
