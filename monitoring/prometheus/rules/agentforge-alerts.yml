@@ -1,0 +1,172 @@
+groups:
+  - name: agentforge-alerts
+    interval: 30s
+    rules:
+      # API Availability
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="agentforge-backend",status=~"5.."}[5m])) 
+          / 
+          sum(rate(http_requests_total{job="agentforge-backend"}[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          service: api
+        annotations:
+          summary: "High API error rate (>1%)"
+          description: "API error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook: "https://runbooks.agentforge.com/high-error-rate"
+
+      # API Latency
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(http_request_duration_seconds_bucket{job="agentforge-backend"}[5m])) 
+            by (le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: api
+        annotations:
+          summary: "High API latency (p99 > 1s)"
+          description: "API p99 latency is {{ $value }}s"
+          runbook: "https://runbooks.agentforge.com/high-latency"
+
+      # Workflow Failure Rate
+      - alert: WorkflowFailureRate
+        expr: |
+          sum(rate(workflow_failures_total[5m])) 
+          / 
+          sum(rate(workflow_executions_total[5m])) > 0.05
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          service: workflow
+        annotations:
+          summary: "High workflow failure rate (>5%)"
+          description: "Workflow failure rate is {{ $value | humanizePercentage }}"
+          runbook: "https://runbooks.agentforge.com/workflow-failures"
+
+      # Deployment Failure Rate
+      - alert: DeploymentFailureRate
+        expr: |
+          sum(rate(deployment_failures_total[5m])) 
+          / 
+          sum(rate(deployments_total[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          service: deployment
+        annotations:
+          summary: "High deployment failure rate (>1%)"
+          description: "Deployment failure rate is {{ $value | humanizePercentage }}"
+          runbook: "https://runbooks.agentforge.com/deployment-failures"
+
+      # Agent Failure Rate
+      - alert: AgentFailureRate
+        expr: |
+          sum(rate(agent_failures_total[5m])) 
+          / 
+          sum(rate(agent_executions_total[5m])) > 0.1
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          service: agents
+        annotations:
+          summary: "High agent failure rate (>10%)"
+          description: "Agent failure rate is {{ $value | humanizePercentage }}"
+          runbook: "https://runbooks.agentforge.com/agent-failures"
+
+      # High CPU Usage
+      - alert: HighCpuUsage
+        expr: |
+          sum(rate(container_cpu_usage_seconds_total{namespace="agentforge"}[5m])) 
+          / 
+          sum(container_spec_cpu_quota/container_spec_cpu_period{namespace="agentforge"}) > 0.8
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          resource: cpu
+        annotations:
+          summary: "High CPU usage (>80%)"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+          runbook: "https://runbooks.agentforge.com/high-cpu"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: |
+          sum(container_memory_usage_bytes{namespace="agentforge"}) 
+          / 
+          sum(container_spec_memory_limit_bytes{namespace="agentforge"}) > 0.85
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          resource: memory
+        annotations:
+          summary: "High memory usage (>85%)"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+          runbook: "https://runbooks.agentforge.com/high-memory"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          resource: disk
+        annotations:
+          summary: "Low disk space (<10%)"
+          description: "Disk space is {{ $value | humanizePercentage }} free"
+          runbook: "https://runbooks.agentforge.com/low-disk"
+
+      # Backup Failed
+      - alert: BackupFailed
+        expr: |
+          backup_status{status="failed"} == 1
+        for: 0m
+        labels:
+          severity: critical
+          team: platform
+          service: backup
+        annotations:
+          summary: "Backup failed"
+          description: "Backup {{ $labels.backup_name }} failed: {{ $labels.error }}"
+          runbook: "https://runbooks.agentforge.com/backup-failed"
+
+      # Vault Unsealed
+      - alert: VaultUnsealed
+        expr: |
+          vault_core_unsealed == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          service: vault
+        annotations:
+          summary: "Vault is sealed"
+          description: "Vault is not unsealed, secrets inaccessible"
+          runbook: "https://runbooks.agentforge.com/vault-sealed"
+
+      # OPA Down
+      - alert: OpaDown
+        expr: |
+          up{job="opa"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          service: opa
+        annotations:
+          summary: "OPA is down"
+          description: "OPA policy engine is not reachable"
+          runbook: "https://runbooks.agentforge.com/opa-down"

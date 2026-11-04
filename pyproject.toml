@@ -1,0 +1,128 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentforge"
+version = "0.1.0"
+description = "AgentForge - AI-Powered Software Development Platform"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "asyncpg>=0.29.0",
+    "redis>=5.0.0",
+    "qdrant-client>=1.9.0",
+    "neo4j>=5.15.0",
+    "langgraph>=0.0.40",
+    "langchain-core>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "langchain-anthropic>=0.1.0",
+    "openai>=1.12.0",
+    "anthropic>=0.18.0",
+    "instructor>=1.0.0",
+    "httpx>=0.26.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "python-dotenv>=1.0.0",
+    "pydantic-extra-types>=2.4.0",
+    "structlog>=24.1.0",
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-sdk>=1.22.0",
+    "opentelemetry-exporter-otlp>=1.22.0",
+    "opentelemetry-instrumentation-fastapi>=0.42b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.42b0",
+    "opentelemetry-instrumentation-redis>=0.42b0",
+    "opentelemetry-instrumentation-httpx>=0.42b0",
+    "prometheus-client>=0.19.0",
+    "tenacity>=8.2.0",
+    "aiokafka>=0.9.0",
+    "temporalio>=1.5.0",
+    "minio>=7.2.0",
+    "boto3>=1.34.0",
+    "kubernetes>=29.0.0",
+    "docker>=7.0.0",
+    "github-pygithub>=2.1.0",
+    "gitpython>=3.1.40",
+    "playwright>=1.40.0",
+    "beautifulsoup4>=4.12.0",
+    "markdown>=3.5.0",
+    "jinja2>=3.1.0",
+    "pyyaml>=6.0.0",
+    "tomli>=2.0.0",
+    "tomli-w>=1.0.0",
+    "msgspec>=0.18.0",
+    "orjson>=3.9.0",
+    "typer>=0.9.0",
+    "rich>=13.7.0",
+    # Enterprise dependencies
+    "hvac>=2.0.0",
+    "pyotp>=2.9.0",
+    "cryptography>=42.0.0",
+    "saml2>=1.0.0",
+    "webauthn>=0.6.0",
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.26.0",
+    "faker>=22.0.0",
+    "factory-boy>=3.3.0",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
+    "pre-commit>=3.6.0",
+    "bandit>=1.7.0",
+    "safety>=2.3.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apps/*", "services/*", "agents/*", "orchestration/*", "rag/*", "memory/*", "integrations/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "T20", "PTH", "ERA", "PD", "RET", "PER", "ARG", "PTH", "FLY", "NPY", "TD", "TRY", "ASYNC", "DTZ", "EXE", "ISC", "ICN", "LOG", "RSE", "PIE", "TID", "Q"]
+ignore = ["S101", "S311", "S603", "S607", "B008", "C901", "T201", "T203", "ARG001", "ARG002"]
+per-file-ignores = {"tests/*": ["S101", "S311", "S603", "S607"]}
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_optional = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests", "apps/backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-markers"
+
+[tool.coverage.run]
+source = ["apps", "services", "agents", "orchestration", "rag", "memory", "integrations"]
+omit = ["*/tests/*", "*/alembic/*", "*/scripts/*"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "def __repr__", "raise AssertionError", "raise NotImplementedError"]
+precision = 2

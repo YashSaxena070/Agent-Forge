@@ -1,0 +1,431 @@
+version: '3.8'
+
+services:
+  # Databases
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: agentforge-postgres
+    environment:
+      POSTGRES_DB: agentforge
+      POSTGRES_USER: agentforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agentforge_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentforge -d agentforge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: agentforge-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  qdrant:
+    image: qdrant/qdrant:v1.9.0
+    container_name: agentforge-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  neo4j:
+    image: neo4j:5.15-enterprise
+    container_name: agentforge-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-agentforge_dev}
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 2g
+      NEO4J_dbms_memory_pagecache_size: 1g
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-agentforge_dev}", "RETURN 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  # Message Queue
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: agentforge-kafka
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD-SHELL", "/etc/confluent/docker/healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: agentforge-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  # Workflow Engine
+  temporal:
+    image: temporalio/auto-setup:1.24.0
+    container_name: agentforge-temporal
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: agentforge
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-agentforge_dev}
+      POSTGRES_SEEDS: postgres
+      POSTGRES_DB: agentforge
+      TEMPORAL_CLI_ADDRESS: temporal:7233
+      DYNAMIC_CONFIG_FILE_PATH: /etc/temporal/config/dynamic_config.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - temporal_data:/var/lib/temporal
+    networks:
+      - agentforge-network
+
+  temporal-ui:
+    image: temporalio/ui:2.28.0
+    container_name: agentforge-temporal-ui
+    ports:
+      - "8080:8080"
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_UI_PORT: 8080
+    depends_on:
+      - temporal
+    networks:
+      - agentforge-network
+
+  # Object Storage
+  minio:
+    image: minio/minio:RELEASE.2024-05-15T00-14-32Z
+    container_name: agentforge-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: agentforge
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-agentforge_dev}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:v2.54.0
+    container_name: agentforge-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentforge-network
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: agentforge-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - agentforge-network
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: agentforge-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - agentforge-network
+
+  tempo:
+    image: grafana/tempo:2.4.0
+    container_name: agentforge-tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./monitoring/tempo/tempo-config.yaml:/etc/tempo.yaml
+      - tempo_data:/tempo
+    command: -config.file=/etc/tempo.yaml
+    networks:
+      - agentforge-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.106.0
+    container_name: agentforge-otel-collector
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+      - "8889:8889"
+      - "13133:13133"
+    volumes:
+      - ./monitoring/otel/otel-config.yaml:/etc/otel-collector-config.yaml
+    command: --config=/etc/otel-collector-config.yaml
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+    networks:
+      - agentforge-network
+
+  # Application Services
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.backend
+    container_name: agentforge-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://agentforge:${POSTGRES_PASSWORD:-agentforge_dev}@postgres:5432/agentforge
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-agentforge_dev}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - TEMPORAL_ADDRESS=temporal:7233
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=agentforge
+      - MINIO_SECRET_KEY=${MINIO_PASSWORD:-agentforge_dev}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    volumes:
+      - ./apps/backend:/app
+      - ./services:/app/services
+      - ./agents:/app/agents
+      - ./orchestration:/app/orchestration
+      - ./rag:/app/rag
+      - ./memory:/app/memory
+      - ./integrations:/app/integrations
+    networks:
+      - agentforge-network
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.frontend
+    container_name: agentforge-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - agentforge-network
+    command: npm run dev
+
+  # Worker Services
+  temporal-worker:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.worker
+    container_name: agentforge-temporal-worker
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://agentforge:${POSTGRES_PASSWORD:-agentforge_dev}@postgres:5432/agentforge
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-agentforge_dev}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - TEMPORAL_ADDRESS=temporal:7233
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=agentforge
+      - MINIO_SECRET_KEY=${MINIO_PASSWORD:-agentforge_dev}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      - temporal
+      - postgres
+      - redis
+      - qdrant
+      - neo4j
+      - kafka
+    volumes:
+      - ./apps/backend:/app
+      - ./services:/app/services
+      - ./agents:/app/agents
+      - ./orchestration:/app/orchestration
+      - ./rag:/app/rag
+      - ./memory:/app/memory
+      - ./integrations:/app/integrations
+    networks:
+      - agentforge-network
+    command: python -m src.workers.temporal.worker
+
+  kafka-consumer:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.worker
+    container_name: agentforge-kafka-consumer
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://agentforge:${POSTGRES_PASSWORD:-agentforge_dev}@postgres:5432/agentforge
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      - kafka
+      - postgres
+      - redis
+    volumes:
+      - ./apps/backend:/app
+      - ./services:/app/services
+    networks:
+      - agentforge-network
+    command: python -m src.workers.kafka.consumer
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  temporal_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  tempo_data:
+
+networks:
+  agentforge-network:
+    driver: bridge

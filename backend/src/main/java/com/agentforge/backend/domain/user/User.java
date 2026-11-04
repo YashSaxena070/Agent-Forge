@@ -19,6 +19,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class User extends BaseEntity {
+
     @Column(nullable = false)
     private String fullName;
 
@@ -37,4 +38,23 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     private boolean emailVerified;
+
+    // Explicit getters and setters for Lombok compatibility
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
+    public UserStatus getStatus() { return status; }
+    public void setStatus(UserStatus status) { this.status = status; }
+
+    public SystemRole getSystemRole() { return systemRole; }
+    public void setSystemRole(SystemRole systemRole) { this.systemRole = systemRole; }
+
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
 }

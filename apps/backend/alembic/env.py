@@ -1,0 +1,48 @@
+# Alembic Configuration
+# A generic, single database configuration.
+
+[alembic]
+# Template used to generate migration files
+# file_template = %%(rev)s_%%(slug)s
+
+# Set to 'true' to run the environment during
+# the 'revision' command, regardless of autogenerate
+# revision_environment = false
+
+# Logging configuration
+[loggers]
+keys = root,sqlalchemy,alembic
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = WARN
+handlers = console
+qualname =
+
+[logger_sqlalchemy]
+level = WARN
+handlers =
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers = console
+qualname = alembic
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(levelname)-5.5s [%(name)s] %(message)s
+datefmt = %H:%M:%S
+
+# Database URL - will be overridden by env variable
+sqlalchemy.url = postgresql+asyncpg://agentforge:agentforge_dev@localhost:5432/agentforge
