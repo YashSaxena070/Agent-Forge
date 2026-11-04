@@ -48,7 +48,7 @@ dependencies = [
     "boto3>=1.34.0",
     "kubernetes>=29.0.0",
     "docker>=7.0.0",
-    "github-pygithub>=2.1.0",
+    "PyGithub>=2.1.0",
     "gitpython>=3.1.40",
     "playwright>=1.40.0",
     "beautifulsoup4>=4.12.0",
@@ -65,8 +65,9 @@ dependencies = [
     "hvac>=2.0.0",
     "pyotp>=2.9.0",
     "cryptography>=42.0.0",
-    "saml2>=1.0.0",
+    "pysaml2>=7.0.0",
     "webauthn>=0.6.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -86,14 +87,14 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["apps/*", "services/*", "agents/*", "orchestration/*", "rag/*", "memory/*", "integrations/*"]
+include = ["apps*", "services*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "T20", "PTH", "ERA", "PD", "RET", "PER", "ARG", "PTH", "FLY", "NPY", "TD", "TRY", "ASYNC", "DTZ", "EXE", "ISC", "ICN", "LOG", "RSE", "PIE", "TID", "Q"]
 ignore = ["S101", "S311", "S603", "S607", "B008", "C901", "T201", "T203", "ARG001", "ARG002"]
-per-file-ignores = {"tests/*": ["S101", "S311", "S603", "S607"]}
+per-file-ignores = {"tests/*" = ["S101", "S311", "S603", "S607"]}
 
 [tool.ruff.format]
 quote-style = "double"

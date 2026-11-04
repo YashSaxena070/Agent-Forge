@@ -1,262 +1,370 @@
-# AgentForge
+# AgentForge ⚡
 
-AI-Powered Software Development Platform
+> **Autonomous AI Software Development & Engineering Platform**  
+> An enterprise-grade, multi-agent platform designed to automate the end-to-end software development lifecycle—from requirements analysis, system architecture, and fullstack coding to quality assurance, security reviews, and production deployment.
 
-## Overview
+---
 
-AgentForge is a comprehensive platform that uses AI agents to automate the software development lifecycle. It combines LangGraph workflow orchestration, specialized AI agents, Hybrid RAG, and production-ready infrastructure to take a product idea from concept to deployed application.
+## 📑 Table of Contents
 
-## Architecture
+- [Overview](#-overview)
+- [System Architecture](#-system-architecture)
+- [Subsystems & Capabilities](#-subsystems--capabilities)
+  - [1. Enterprise Core Backend (Spring Boot 3.4)](#1-enterprise-core-backend-spring-boot-34)
+  - [2. Multi-Agent Orchestration & AI Services (FastAPI + LangGraph)](#2-multi-agent-orchestration--ai-services-fastapi--langgraph)
+  - [3. Frontend Dashboard (Next.js 14)](#3-frontend-dashboard-nextjs-14)
+  - [4. Hybrid RAG & 4-Tier Memory](#4-hybrid-rag--4-tier-memory)
+  - [5. Infrastructure & Full Observability Stack](#5-infrastructure--full-observability-stack)
+- [Project Directory Structure](#-project-directory-structure)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Quick Start with Docker Compose](#quick-start-with-docker-compose)
+  - [Running Individual Services Locally](#running-individual-services-locally)
+- [Environment Configuration](#-environment-configuration)
+- [API Documentation](#-api-documentation)
+- [Testing](#-testing)
+- [Production Deployment](#-production-deployment)
+- [License](#-license)
+
+---
+
+## 🔭 Overview
+
+AgentForge bridges enterprise software engineering governance with cutting-edge autonomous AI agents:
+
+1. **Enterprise Control Plane**: Written in **Java 21 / Spring Boot 3.4**, providing multi-tenant workspace isolation, role-based access control (RBAC), multi-factor authentication (TOTP & WebAuthn / Passkeys), Open Policy Agent (OPA) fine-grained authorization, HashiCorp Vault secrets management, tamper-evident cryptographic audit logs, and automated disaster recovery.
+2. **Autonomous Agent Plane**: Powered by **Python, FastAPI, and LangGraph**, running a coordinated team of 10 specialized agents that brainstorm, design, build, test, and package applications with human-in-the-loop review gates.
+3. **Hybrid RAG & Memory**: Blending dense vector retrieval (Qdrant) and knowledge graphs (Neo4j) with tiered caching (Redis) and relational persistence (PostgreSQL) for deep contextual awareness.
+4. **Developer UI**: A modern **Next.js 14** web console featuring real-time WebSocket state streaming, interactive workflow graph visualization, and agent approval dashboards.
+
+---
+
+## 🏛 System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        AgentForge Platform                       │
-├─────────────────────────────────────────────────────────────────┤
-│  Frontend (Next.js)          │  Backend (FastAPI)               │
-│  ──────────────────────      │  ──────────────────              │
-│  • Dashboard                 │  • REST API                      │
-│  • Workflow Visualization    │  • Authentication/Authorization  │
-│  • Agent Monitoring          │  • Workflow Orchestration        │
-│  • Deployment Management     │  • Agent Management              │
-│  • Observability             │  • RAG Pipeline                  │
-└──────────────────────────────┴──────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-┌───────────────┐    ┌───────────────┐    ┌───────────────┐
-│  LangGraph    │    │  Hybrid RAG   │    │   Memory      │
-│  Orchestration│    │  (Qdrant+     │    │   Layer       │
-│               │    │   Neo4j)      │    │               │
-│ • StateGraph  │    │               │    │ • Redis       │
-│ • Nodes/Edges │    │ • Vector Search│   │ • PostgreSQL  │
-│ • Checkpoints │    │ • Graph Query │    │ • Qdrant      │
-│ • Human-in-loop│   │ • Reranking   │    │ • Neo4j       │
-└───────────────┘    └───────────────┘    └───────────────┘
-        │                     │                     │
-        └─────────────────────┼─────────────────────┘
-                              ▼
-                    ┌───────────────────┐
-                    │  Infrastructure   │
-                    │                   │
-                    │ • PostgreSQL      │
-                    │ • Redis           │
-                    │ • Qdrant          │
-                    │ • Neo4j           │
-                    │ • Kafka           │
-                    │ • Temporal        │
-                    │ • MinIO           │
-                    │ • Prometheus      │
-                    │ • Grafana         │
-                    │ • Loki/Tempo      │
-                    └───────────────────┘
+                                  ┌────────────────────────────────────────┐
+                                  │       Client / Developer Browser       │
+                                  └───────────────────┬────────────────────┘
+                                                      │ HTTPS / WSS
+                                                      ▼
+                       ┌──────────────────────────────────────────────────────────────┐
+                       │                   API Gateway & Ingress                      │
+                       └──────────────┬───────────────────────────────┬───────────────┘
+                                      │                               │
+            ┌─────────────────────────┴─────────┐   ┌─────────────────┴────────────────────────┐
+            │   Enterprise Core Backend         │   │   AI & Multi-Agent Orchestration         │
+            │   (Spring Boot 3.4 / Java 21)     │   │   (FastAPI / LangGraph / Python)         │
+            ├───────────────────────────────────┤   ├──────────────────────────────────────────┤
+            │ • Multi-tenant Workspaces         │   │ • 10 Specialized Software Agents         │
+            │ • RBAC & OPA Fine-grained Auth    │   │ • LangGraph StateMachine Workflows       │
+            │ • MFA: TOTP & WebAuthn Passkeys   │   │ • Model Context Protocol (MCP) Tools     │
+            │ • HashiCorp Vault Envelope Encrypt│   │ • Human-in-the-loop Approval Nodes       │
+            │ • SHA-256 Audit Hash Chain        │   │ • Hybrid RAG (Qdrant Vector + Neo4j)     │
+            │ • Disaster Recovery & Backups     │   │ • Temporal Durable Workflow Engine       │
+            └─────────────────┬─────────────────┘   └─────────────────┬────────────────────────┘
+                              │                                       │
+                              └───────────────────┬───────────────────┘
+                                                  ▼
+                       ┌──────────────────────────────────────────────────────────────┐
+                       │                     Data & Memory Layer                      │
+                       ├──────────────────────┬───────────────────────┬───────────────┤
+                       │  PostgreSQL (Data)   │  Redis (Sessions)     │  Qdrant (RAG) │
+                       │  pgvector (Vectors)  │  Neo4j (Knowledge)    │  MinIO (S3)   │
+                       └──────────────────────┴───────────────────────┴───────────────┘
+                                                  ▲
+                                                  │ Telemetry
+                       ┌──────────────────────────┴───────────────────────────────────┐
+                       │               Observability & Monitoring Stack               │
+                       ├──────────────────────┬───────────────────────┬───────────────┤
+                       │  Prometheus (Metrics)│  Grafana (Dashboards) │  Loki (Logs)  │
+                       │  OpenTelemetry (OTel)│  Tempo (APM Tracing)  │  Micrometer   │
+                       └──────────────────────┴───────────────────────┴───────────────┘
 ```
 
-## Features
+---
 
-### Core Capabilities
-- **Multi-Agent System**: 10 specialized agents (Planner, Product Manager, Architect, Backend, Frontend, Database, QA, Security, DevOps, Reviewer)
-- **Workflow Orchestration**: LangGraph-based stateful workflows with checkpoints, retries, and human-in-the-loop approvals
-- **Hybrid RAG**: Combined vector (Qdrant) and graph (Neo4j) retrieval with reranking
-- **Memory Layer**: Short-term (Redis), long-term (PostgreSQL), semantic (Qdrant), and relationship (Neo4j) memory
-- **MCP Integration**: GitHub, Docker, Kubernetes, Filesystem, Browser, Issue Tracker, Documentation
-- **Durable Execution**: Temporal for long-running workflows with retries and recovery
+## 🧩 Subsystems & Capabilities
 
-### Production Features
-- **Containerized**: Docker images for all services
-- **Kubernetes Ready**: Deployments, HPA, Ingress, RBAC
-- **CI/CD**: GitHub Actions with linting, testing, security scanning, and deployment
-- **Observability**: OpenTelemetry, Prometheus, Grafana, Loki, Tempo
-- **Security**: JWT auth, RBAC, rate limiting, audit logging
+### 1. Enterprise Core Backend (Spring Boot 3.4)
+- **Multi-Tenant Hierarchy**: Strict isolation between Organizations, Workspaces, and Projects with tenant context propagators (`WorkspaceContextFilter`, `WorkspaceContextHolder`).
+- **Identity & Access Management (IAM)**: OAuth2 Resource Server, OIDC / SAML SSO integration, JWT access & refresh tokens with rotation and revocation blacklist.
+- **Enterprise MFA / Passkeys**:
+  - RFC 6238 TOTP (Google Authenticator) with QR generation and encrypted secret storage.
+  - FIDO2 / WebAuthn passkey registration and attestation via Yubico WebAuthn Server.
+  - Cryptographically secure emergency backup recovery codes.
+- **Fine-Grained Authorization (OPA)**: Open Policy Agent client evaluating dynamic declarative policies for critical project operations.
+- **Secrets & Data Protection**: HashiCorp Vault transit engine integration, AES-256-GCM envelope encryption for sensitive credentials (`CryptoUtil`).
+- **Cryptographic Audit Logs**: Tamper-evident ledger linking log events via SHA-256 hash chains (`AuditService`).
+- **Disaster Recovery**: Automated scheduled database dumps (`pg_dump`), GZIP compression, SHA-256 integrity verification, and instant restore pipelines (`BackupService`).
 
-## Quick Start
+### 2. Multi-Agent Orchestration & AI Services (FastAPI + LangGraph)
+- **10 Specialized Engineering Agents**:
+  | Agent | Primary Responsibilities |
+  |---|---|
+  | **Planner** | Requirements parsing, epic decomposition, milestone scheduling |
+  | **Product Manager** | User stories, acceptance criteria, priority matrix |
+  | **Architect** | Architecture decisions (ADRs), API contract definitions, data models |
+  | **Backend** | Endpoint generation, business logic, persistence layers, auth integration |
+  | **Frontend** | React/Next.js component implementation, state management, styling |
+  | **Database** | Migration generation (Flyway/Alembic), query optimization, indexing |
+  | **QA** | Unit, integration, and E2E test plan generation and execution |
+  | **Security** | OWASP Top 10 threat modeling, static code analysis, dependency audits |
+  | **DevOps** | Dockerfile creation, Helm / K8s manifests, CI/CD pipeline automation |
+  | **Reviewer** | Cross-cutting code reviews, architectural quality gates, lint enforcement |
+- **Durable Execution & Checkpoints**: Temporal and LangGraph `MemorySaver` checkpointers enable resumable workflows, safe rollbacks, and interactive human-in-the-loop approval.
+- **Model Context Protocol (MCP)**: Tool integration for GitHub, Docker daemon, Kubernetes clusters, local filesystem, and web research.
+
+### 3. Frontend Dashboard (Next.js 14)
+- Built on the Next.js App Router with TypeScript, Tailwind CSS, and Radix UI components.
+- Interactive workflow graphs visualizing agent node states, token consumption, and intermediate code diffs.
+- Live streaming execution updates over WebSockets.
+- Human review gates allowing engineers to approve, revise, or reject agent decisions.
+
+### 4. Hybrid RAG & 4-Tier Memory
+- **Short-Term Memory**: Redis-backed conversation cache for fast agent reasoning context.
+- **Long-Term Memory**: PostgreSQL entity storage tracking historical projects, builds, and audit events.
+- **Semantic Vector Memory**: Qdrant vector database indexing codebase symbols, documentation, and pull request history.
+- **Relationship Knowledge Graph**: Neo4j graph database storing dependencies, microservice call graphs, and architectural topologies.
+
+### 5. Infrastructure & Full Observability Stack
+- **Prometheus & Micrometer**: SLI/SLO latency timers, error counters, and agent token usage metrics.
+- **Grafana**: Pre-configured dashboards for system health, agent KPIs, and cluster metrics.
+- **Loki & Promtail**: Centralized structured JSON logging across all backend and agent microservices.
+- **Tempo & OpenTelemetry**: Distributed tracing linking HTTP requests to downstream LLM agent tool calls.
+
+---
+
+## 📁 Project Directory Structure
+
+```
+AgentForge/
+├── backend/                      # Enterprise Java Core Backend
+│   ├── src/main/java/com/agentforge/backend/
+│   │   ├── audit/                # Cryptographic audit logging & hash chaining
+│   │   ├── auth/                 # Authentication, JWT, and session management
+│   │   ├── common/               # ApiResponse, exceptions, crypto utilities
+│   │   ├── config/               # Enterprise RSA keys & OAuth2 security configs
+│   │   ├── disaster/             # Automated backup & restore engine
+│   │   ├── domain/               # JPA entities (User, Org, Project, MFA)
+│   │   ├── mfa/                  # TOTP & WebAuthn / Passkeys controller & services
+│   │   ├── monitoring/           # Micrometer SLI metrics & Prometheus hooks
+│   │   ├── organization/         # Organization & membership management
+│   │   ├── project/              # Project and project-member services
+│   │   ├── security/             # Spring Security, OPA client, Vault client
+│   │   └── tenant/               # Workspace multi-tenancy & context filtering
+│   ├── src/main/resources/       # application.yml, DB migrations (Flyway V1..V10)
+│   ├── pom.xml                   # Maven dependencies (Spring Boot 3.4.2, Java 21)
+│   └── mvnw.cmd / mvnw           # Maven wrapper scripts
+│
+├── ai-services/                  # Agentic Microservice Suite
+│   ├── agent-service/            # Core FastAPI agent runtime & state graphs
+│   ├── planner-service/          # Planning & task decomposition service
+│   ├── workflow-service/         # Workflow graph dispatcher
+│   ├── rag-service/              # Vector & graph search engine
+│   ├── mcp-service/              # Model Context Protocol tools
+│   └── shared-ai/                # Shared LLM abstractions and prompts
+│
+├── apps/                         # Fullstack Application Modules
+│   ├── backend/                  # Python FastAPI service for multi-agent execution
+│   │   ├── src/                  # Agents, orchestration nodes, API v1, RAG
+│   │   ├── alembic/              # Database schema migrations
+│   │   └── requirements.txt      # Python dependencies
+│   └── frontend/                 # Next.js 14 Dashboard
+│       ├── src/                  # App router pages, components, lib
+│       ├── tailwind.config.ts    # Tailwind styling config
+│       └── package.json          # Node dependencies
+│
+├── services/
+│   └── shared/                   # Shared Python schemas, config, telemetry, & utils
+│
+├── infra/                        # Infrastructure Configurations
+│   ├── docker/                   # Dockerfiles for backend, frontend, and workers
+│   └── kubernetes/               # K8s base manifests, RBAC, deployments, ingress
+│
+├── monitoring/                   # Observability Stack
+│   ├── prometheus/               # Prometheus scrape configs & alert rules
+│   ├── grafana/                  # Dashboards (AgentForge Overview) & datasources
+│   ├── loki/                     # Loki log aggregation configs
+│   └── tempo/                    # Tempo tracing configs
+│
+├── docker-compose.yml            # Full production stack (apps + databases + monitoring)
+├── docker-compose.dev.yml        # Development environment stack
+├── Makefile                      # Quick developer CLI shortcuts
+├── pyproject.toml                # Python workspace metadata
+└── README.md                     # Project documentation
+```
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Docker & Docker Compose
-- Python 3.11+
-- Node.js 20+
-- kubectl (for Kubernetes deployment)
 
-### Local Development
+Ensure the following tools are installed on your machine:
+- **Java Development Kit (JDK) 21+** (`java -version`)
+- **Python 3.11+** (`python --version`)
+- **Node.js 20+** & **npm** / **pnpm** (`node -v`)
+- **Docker** & **Docker Compose** (`docker compose version`)
 
-1. **Clone and configure**
+---
+
+### Quick Start with Docker Compose
+
+To spin up all databases, message brokers, and observability infrastructure:
+
 ```bash
-git clone https://github.com/yourorg/agentforge.git
-cd agentforge
+# 1. Clone the repository
+git clone https://github.com/your-org/AgentForge.git
+cd AgentForge
+
+# 2. Copy the sample environment file
 cp .env.example .env
-# Edit .env with your API keys
+
+# 3. Start the infrastructure containers
+docker compose up -d postgres redis qdrant neo4j minio
 ```
 
-2. **Start infrastructure**
+---
+
+### Running Individual Services Locally
+
+#### 1. Java Enterprise Backend (`backend/`)
 ```bash
-docker-compose up -d postgres redis qdrant neo4j kafka temporal minio
-```
+cd backend
 
-3. **Start backend**
+# Compile and verify tests
+./mvnw clean compile -DskipTests   # Windows: .\mvnw.cmd clean compile -DskipTests
+
+# Run the Spring Boot application
+./mvnw spring-boot:run              # Windows: .\mvnw.cmd spring-boot:run
+```
+*The Spring Boot API runs at `http://localhost:8080/api`.*
+
+#### 2. AI Agent Service (`ai-services/agent-service/`)
 ```bash
-cd apps/backend
-pip install -e ".[dev]"
-alembic upgrade head
-uvicorn src.main:app --reload
-```
+cd ai-services/agent-service
 
-4. **Start frontend**
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the FastAPI service
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+*Health check is available at `http://localhost:8000/health`.*
+
+#### 3. Frontend Dashboard (`apps/frontend/`)
 ```bash
 cd apps/frontend
+
+# Install dependencies
 npm install
+
+# Start development server
 npm run dev
 ```
+*The dashboard opens at `http://localhost:3000`.*
 
-5. **Access**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- Temporal UI: http://localhost:8080
-- Grafana: http://localhost:3001 (admin/admin)
+---
 
-### Production Deployment
+## ⚙️ Environment Configuration
 
-```bash
-# Build images
-docker build -t agentforge/backend:v1.0.0 -f infra/docker/Dockerfile.backend .
-docker build -t agentforge/frontend:v1.0.0 -f infra/docker/Dockerfile.frontend .
-docker build -t agentforge/worker:v1.0.0 -f infra/docker/Dockerfile.worker .
+Copy `.env.example` to `.env` in the root and configure required credentials:
 
-# Deploy to Kubernetes
-kubectl apply -k infra/kubernetes/overlays/production
-```
+```ini
+# Database & Cache
+DATABASE_URL=jdbc:postgresql://localhost:5432/agentforge
+DATABASE_USERNAME=agentforge
+DATABASE_PASSWORD=agentforge_dev
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-## Project Structure
+# Vector & Graph Databases
+QDRANT_URL=http://localhost:6333
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=agentforge_dev
 
-```
-agentforge/
-├── apps/
-│   ├── backend/           # FastAPI backend
-│   │   ├── src/
-│   │   │   ├── api/       # REST endpoints
-│   │   │   ├── agents/    # Specialized agents
-│   │   │   ├── orchestration/  # LangGraph workflow
-│   │   │   ├── rag/       # Hybrid RAG pipeline
-│   │   │   ├── memory/    # Memory management
-│   │   │   ├── integrations/  # MCP integrations
-│   │   │   └── workers/   # Temporal/Kafka workers
-│   │   └── tests/
-│   └── frontend/          # Next.js dashboard
-├── services/
-│   └── shared/            # Shared libraries
-├── agents/                # Agent implementations
-├── orchestration/         # LangGraph components
-├── rag/                   # RAG pipeline
-├── memory/                # Memory systems
-├── integrations/          # MCP & external integrations
-├── infra/
-│   ├── docker/            # Dockerfiles
-│   ├── kubernetes/        # K8s manifests
-│   └── terraform/         # Cloud infrastructure
-├── monitoring/            # Prometheus, Grafana, Loki, Tempo
-├── deployments/           # Helm, ArgoCD
-├── docs/                  # Documentation
-└── tests/                 # Integration & E2E tests
-```
-
-## Specialized Agents
-
-| Agent | Role | Capabilities |
-|-------|------|--------------|
-| **Planner** | Project planning | Requirements analysis, task decomposition, milestone creation |
-| **Product Manager** | Requirements | User stories, acceptance criteria, prioritization |
-| **Architect** | System design | Architecture, API design, data modeling, ADRs |
-| **Backend** | API implementation | REST/gRPC, business logic, database, auth |
-| **Frontend** | UI implementation | React/Next.js, state management, UX |
-| **Database** | Data layer | Schema design, migrations, optimization |
-| **QA** | Testing | Test planning, automation, quality gates |
-| **Security** | Security | Threat modeling, reviews, compliance |
-| **DevOps** | Infrastructure | CI/CD, Kubernetes, monitoring |
-| **Reviewer** | Quality gates | Code review, architecture review |
-
-## Configuration
-
-Key environment variables (see `.env.example`):
-
-```bash
-# Database
-DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db
-REDIS_URL=redis://host:6379/0
-QDRANT_URL=http://host:6333
-NEO4J_URI=bolt://host:7687
+# JWT Security
+JWT_SECRET=your-256-bit-secret-key-base64-encoded==
+JWT_ACCESS_TOKEN_EXPIRATION=900000        # 15 minutes
+JWT_REFRESH_TOKEN_EXPIRATION=2592000000    # 30 days
 
 # LLM Providers
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-...
+OPENAI_API_KEY=sk-proj-...
+ANTHROPIC_API_KEY=sk-ant-...
 
-# Security
-SECRET_KEY=your-secret-key
-JWT_EXPIRATION_HOURS=24
-
-# Integrations
-GITHUB_TOKEN=ghp_...
-KUBECONFIG=/path/to/kubeconfig
+# OPA & Vault Integration
+OPA_URL=http://localhost:8181
+VAULT_URL=http://localhost:8200
+VAULT_TOKEN=your-vault-token
 ```
 
-## API Documentation
+---
 
-API docs available at `/docs` (Swagger UI) and `/redoc` (ReDoc).
+## 📖 API Documentation
 
-Key endpoints:
-- `POST /api/v1/projects` - Create project
-- `POST /api/v1/workflows` - Create workflow
-- `POST /api/v1/workflows/{id}/execute` - Execute workflow
-- `GET /api/v1/workflows/{id}/status` - Get workflow status
-- `POST /api/v1/rag/query` - Query RAG pipeline
-- `WS /api/v1/ws/workflow/{id}` - Real-time workflow updates
+Once services are running, interactive API documentation is available at:
 
-## Monitoring
+| Service | Swagger UI / OpenAPI | Endpoint |
+|---|---|---|
+| **Enterprise Backend** | `http://localhost:8080/api/swagger-ui.html` | `/api/v1/**` |
+| **AI Agent Service** | `http://localhost:8000/docs` | `/agent/**`, `/health` |
+| **FastAPI Orchestrator** | `http://localhost:8001/docs` | `/api/v1/**` |
 
-### Metrics (Prometheus/Grafana)
-- Workflow execution duration, success rate
-- Agent performance (tokens, cost, latency)
-- RAG retrieval quality
-- System resources (CPU, memory, disk)
+---
 
-### Logs (Loki)
-- Structured JSON logs
-- Query by service, level, trace ID
-
-### Traces (Tempo)
-- Distributed tracing via OpenTelemetry
-- Workflow and agent execution traces
-
-## Testing
+## 🧪 Testing
 
 ```bash
-# Backend tests
+# Run Java Spring Boot unit & integration tests
+cd backend
+./mvnw test                         # Windows: .\mvnw.cmd test
+
+# Run Python AI service tests
 cd apps/backend
-pytest --cov=src --cov-report=html
+pytest tests/ -v
 
-# Frontend tests
+# Run Frontend linting & tests
 cd apps/frontend
-npm run test:coverage
-
-# Integration tests
-pytest tests/integration/
-
-# E2E tests
-pytest tests/e2e/
+npm run lint
+npm run test
 ```
 
-## Contributing
+---
 
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with tests
-4. Run linting: `ruff check . && mypy apps/backend/src`
-5. Submit a pull request
+## 🚢 Production Deployment
 
-## License
+### Docker Container Builds
 
-MIT License - see LICENSE file for details.
+```bash
+# Build backend container
+docker build -t agentforge/backend:latest -f infra/docker/Dockerfile.backend .
 
-## Support
+# Build frontend container
+docker build -t agentforge/frontend:latest -f infra/docker/Dockerfile.frontend .
 
-- Documentation: `/docs`
-- Issues: GitHub Issues
-- Discussions: GitHub Discussions
+# Build agent worker container
+docker build -t agentforge/worker:latest -f infra/docker/Dockerfile.worker .
+```
+
+### Kubernetes Manifest Deployment
+
+```bash
+# Apply namespace, RBAC, and base manifests
+kubectl apply -f infra/kubernetes/base/namespace.yaml
+kubectl apply -f infra/kubernetes/base/rbac.yaml
+kubectl apply -f infra/kubernetes/base/secrets.yaml
+kubectl apply -f infra/kubernetes/base/backend-deployment.yaml
+kubectl apply -f infra/kubernetes/base/frontend-deployment.yaml
+kubectl apply -f infra/kubernetes/base/ingress.yaml
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

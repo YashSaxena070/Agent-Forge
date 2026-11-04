@@ -17,11 +17,6 @@ RUN pip install --no-cache-dir -e ".[dev]"
 # Copy application code
 COPY apps/backend ./apps/backend
 COPY services ./services
-COPY agents ./agents
-COPY orchestration ./orchestration
-COPY rag ./rag
-COPY memory ./memory
-COPY integrations ./integrations
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app

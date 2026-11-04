@@ -1,48 +1,88 @@
-# Alembic Configuration
-# A generic, single database configuration.
+import asyncio
+import os
+import sys
+from logging.config import fileConfig
 
-[alembic]
-# Template used to generate migration files
-# file_template = %%(rev)s_%%(slug)s
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
-# Set to 'true' to run the environment during
-# the 'revision' command, regardless of autogenerate
-# revision_environment = false
+from alembic import context
 
-# Logging configuration
-[loggers]
-keys = root,sqlalchemy,alembic
+# Add project root to sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-[handlers]
-keys = console
+try:
+    from apps.backend.src.core.config import settings
+    from apps.backend.src.core.database import Base
+    import apps.backend.src.models.entities  # noqa: F401
+    target_metadata = Base.metadata
+except Exception:
+    target_metadata = None
 
-[formatters]
-keys = generic
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
 
-[logger_root]
-level = WARN
-handlers = console
-qualname =
+# Interpret the config file for Python logging.
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
-[logger_sqlalchemy]
-level = WARN
-handlers =
-qualname = sqlalchemy.engine
+db_url = os.getenv("DATABASE_URL")
+if not db_url:
+    try:
+        from apps.backend.src.core.config import settings
+        db_url = settings.DATABASE_URL
+    except Exception:
+        db_url = "postgresql+asyncpg://agentforge:agentforge_dev@localhost:5432/agentforge"
 
-[logger_alembic]
-level = INFO
-handlers = console
-qualname = alembic
+if db_url:
+    config.set_main_option("sqlalchemy.url", db_url)
 
-[handler_console]
-class = StreamHandler
-args = (sys.stderr,)
-level = NOTSET
-formatter = generic
 
-[formatter_generic]
-format = %(levelname)-5.5s [%(name)s] %(message)s
-datefmt = %H:%M:%S
+def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
 
-# Database URL - will be overridden by env variable
-sqlalchemy.url = postgresql+asyncpg://agentforge:agentforge_dev@localhost:5432/agentforge
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection: Connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    configuration = config.get_section(config.config_ini_section, {})
+    if db_url:
+        configuration["sqlalchemy.url"] = db_url
+
+    connectable = async_engine_from_config(
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    asyncio.run(run_async_migrations())
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()

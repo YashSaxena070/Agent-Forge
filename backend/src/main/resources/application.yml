@@ -40,13 +40,13 @@ spring:
       client:
         registration:
           github:
-            client-id: ${GITHUB_CLIENT_ID}
-            client-secret: ${GITHUB_CLIENT_SECRET}
+            client-id: ${GITHUB_CLIENT_ID:dummy-github-id}
+            client-secret: ${GITHUB_CLIENT_SECRET:dummy-github-secret}
             scope: read:user,user:email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:dummy-google-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:dummy-google-secret}
             scope: openid,email,profile
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:

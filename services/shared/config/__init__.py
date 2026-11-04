@@ -57,16 +57,18 @@ class Settings(BaseSettings):
     OTEL_EXPORTER_OTLP_ENDPOINT: str = Field(default="http://localhost:4317", description="OTLP endpoint")
     OTEL_SERVICE_NAME: str = Field(default="agentforge-backend", description="Service name for telemetry")
     
-    # LLM Providers
-    OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key")
+    # LLM Providers (Default: Groq)
+    OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI or Groq API key")
+    OPENAI_BASE_URL: Optional[str] = Field(default="https://api.groq.com/openai/v1", description="OpenAI or Groq base URL")
+    GROQ_API_KEY: Optional[str] = Field(default=None, description="Groq API key")
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None, description="Anthropic API key")
     GOOGLE_API_KEY: Optional[str] = Field(default=None, description="Google API key")
     AZURE_OPENAI_API_KEY: Optional[str] = Field(default=None, description="Azure OpenAI API key")
     AZURE_OPENAI_ENDPOINT: Optional[str] = Field(default=None, description="Azure OpenAI endpoint")
     AZURE_OPENAI_DEPLOYMENT: Optional[str] = Field(default=None, description="Azure OpenAI deployment name")
     
-    DEFAULT_LLM_PROVIDER: str = Field(default="openai", description="Default LLM provider")
-    DEFAULT_LLM_MODEL: str = Field(default="gpt-4-turbo-preview", description="Default LLM model")
+    DEFAULT_LLM_PROVIDER: str = Field(default="groq", description="Default LLM provider")
+    DEFAULT_LLM_MODEL: str = Field(default="llama-3.3-70b-versatile", description="Default LLM model (e.g. llama-3.3-70b-versatile, gpt-110b)")
     DEFAULT_EMBEDDING_MODEL: str = Field(default="text-embedding-3-large", description="Default embedding model")
     
     # GitHub

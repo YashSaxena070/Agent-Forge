@@ -85,20 +85,59 @@ class OpenAIProvider(LLMProvider):
         "gpt-4o": {"input": 0.005, "output": 0.015},
         "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
         "gpt-3.5-turbo": {"input": 0.0005, "output": 0.0015},
+        "llama-3.3-70b-versatile": {"input": 0.00059, "output": 0.00079},
+        "llama-3.1-8b-instant": {"input": 0.00005, "output": 0.00008},
+        "mixtral-8x7b-32768": {"input": 0.00024, "output": 0.00024},
+        "gpt-110b": {"input": 0.0008, "output": 0.0008},
+        "gpt-oss-120b": {"input": 0.0008, "output": 0.0008},
+        "gpt-120b": {"input": 0.0008, "output": 0.0008},
     }
     
-    def __init__(self, api_key: str = None, base_url: str = None):
-        self.api_key = api_key or settings.OPENAI_API_KEY
+    def __init__(self, api_key: str = None, base_url: str = None, provider_name: str = "openai"):
+        self.provider_name = provider_name
+        
+        is_groq = (
+            provider_name == "groq"
+            or bool(getattr(settings, "GROQ_API_KEY", None))
+            or bool(os.getenv("GROQ_API_KEY"))
+            or getattr(settings, "DEFAULT_LLM_PROVIDER", "").lower() == "groq"
+        )
+        
+        default_base_url = "https://api.groq.com/openai/v1" if is_groq else "https://api.openai.com/v1"
+        self.base_url = (
+            base_url
+            or getattr(settings, "OPENAI_BASE_URL", None)
+            or os.getenv("OPENAI_BASE_URL")
+            or default_base_url
+        )
+        self.api_key = (
+            api_key
+            or (getattr(settings, "GROQ_API_KEY", None) if "groq.com" in self.base_url else None)
+            or (os.getenv("GROQ_API_KEY") if "groq.com" in self.base_url else None)
+            or settings.OPENAI_API_KEY
+            or os.getenv("OPENAI_API_KEY")
+            or getattr(settings, "GROQ_API_KEY", None)
+            or os.getenv("GROQ_API_KEY")
+            or ("dummy-local-key" if ("localhost" in self.base_url or "127.0.0.1" in self.base_url) else None)
+        )
         if not self.api_key:
-            raise LLMError("openai", "OpenAI API key not configured")
+            key_name = "GROQ_API_KEY or OPENAI_API_KEY" if "groq.com" in self.base_url else "OPENAI_API_KEY"
+            raise LLMError(self.provider_name, f"API key not configured (set {key_name} in .env)")
         
         self.client = AsyncOpenAI(
             api_key=self.api_key,
-            base_url=base_url or "https://api.openai.com/v1",
+            base_url=self.base_url,
         )
         # Wrap with instructor for structured output
         self.instructor_client = instructor.from_openai(self.client, mode=instructor.Mode.JSON)
-        self.default_model = settings.DEFAULT_LLM_MODEL
+        
+        default_model = settings.DEFAULT_LLM_MODEL
+        if "groq.com" in self.base_url:
+            if default_model and any(m in default_model.lower() for m in ("110b", "120b", "gpt-oss")):
+                pass
+            elif not default_model or "gpt" in default_model.lower() or default_model in ("auto", "openai"):
+                default_model = "llama-3.3-70b-versatile"
+        self.default_model = default_model
     
     async def complete(
         self,
@@ -110,6 +149,11 @@ class OpenAIProvider(LLMProvider):
         **kwargs,
     ) -> LLMResponse:
         model = model or self.default_model
+        if "groq.com" in self.base_url:
+            if model and any(m in model.lower() for m in ("110b", "120b", "gpt-oss")):
+                pass
+            elif not model or "gpt" in model.lower() or model in ("auto", "openai"):
+                model = "llama-3.3-70b-versatile"
         
         # Convert to OpenAI format
         openai_messages = [
@@ -332,8 +376,8 @@ class LLMProviderFactory:
         provider_name = provider_name or settings.DEFAULT_LLM_PROVIDER
         
         if provider_name not in cls._providers:
-            if provider_name == "openai":
-                cls._providers[provider_name] = OpenAIProvider()
+            if provider_name in ("openai", "groq"):
+                cls._providers[provider_name] = OpenAIProvider(provider_name=provider_name)
             elif provider_name == "anthropic":
                 cls._providers[provider_name] = AnthropicProvider()
             else:
