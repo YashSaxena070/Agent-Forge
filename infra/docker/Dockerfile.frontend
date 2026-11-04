@@ -7,13 +7,13 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY apps/frontend/package.json apps/frontend/package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN if [ -f package-lock.json ]; then npm ci; else npm install --legacy-peer-deps; fi
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY apps/frontend ./
+COPY --from=deps /app/node_modules ./node_modules
 
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
