@@ -10,21 +10,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY pyproject.toml .
-RUN pip install --no-cache-dir -e ".[dev]"
-
-# Copy application code
+# Copy configuration and code
+COPY pyproject.toml README.md ./
 COPY apps/backend ./apps/backend
 COPY services ./services
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -e ".[dev]"
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
 USER app
+
+ENV PYTHONPATH=/app/apps/backend:/app
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)" || exit 1
 
 # Default command (can be overridden)
-CMD ["python", "-m", "src.workers.temporal.worker"]
+CMD ["python", "-m", "apps.backend.src.workers.temporal.worker"]
