@@ -376,11 +376,11 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-  # Deploy to Staging (Manual or Configured Secrets)
+  # Deploy to Staging (Triggered manually via workflow_dispatch with environment=staging)
   deploy-staging:
     name: Deploy to Staging
     needs: [build-backend, build-frontend, build-worker]
-    if: (github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch') && secrets.KUBECONFIG_STAGING != ''
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -396,11 +396,11 @@ jobs:
       run: |
         kubectl apply -k infra/kubernetes/base
 
-  # Deploy to Production (Manual or Configured Secrets)
+  # Deploy to Production (Triggered manually via workflow_dispatch with environment=production)
   deploy-production:
     name: Deploy to Production
     needs: [build-backend, build-frontend, build-worker]
-    if: github.event_name == 'workflow_dispatch' && secrets.KUBECONFIG_PRODUCTION != ''
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
     runs-on: ubuntu-latest
     environment: production
     steps:
