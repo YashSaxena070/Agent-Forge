@@ -67,10 +67,10 @@ processors:
       - sources:
           - from: resource_attribute
             name: k8s.pod.ip
-        - sources:
+      - sources:
           - from: resource_attribute
             name: k8s.pod.uid
-        - sources:
+      - sources:
           - from: connection
 
 exporters:

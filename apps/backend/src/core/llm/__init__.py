@@ -161,6 +161,8 @@ class OpenAIProvider(LLMProvider):
             for msg in messages
         ]
         
+        completion = None
+        response = None
         try:
             if response_model:
                 # Structured output with instructor
@@ -281,6 +283,8 @@ class AnthropicProvider(LLMProvider):
             else:
                 user_messages.append({"role": msg.role, "content": msg.content})
         
+        completion = None
+        response = None
         try:
             if response_model:
                 response = await self.instructor_client.messages.create(

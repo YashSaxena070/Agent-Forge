@@ -112,7 +112,10 @@ class DatabaseManager:
 db_manager = DatabaseManager()
 
 
-async get_db_session = db_manager.session
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Get database session as an async generator dependency."""
+    async with db_manager.session() as session:
+        yield session
 
 
 async def init_db() -> None:

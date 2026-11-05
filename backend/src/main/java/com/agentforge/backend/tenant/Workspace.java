@@ -40,6 +40,7 @@ public class Workspace extends BaseEntity {
     private String description;
 
     @Column(name = "visibility", length = 50)
+    @Builder.Default
     private String visibility = "private";
 
     @ElementCollection
@@ -56,16 +57,20 @@ public class Workspace extends BaseEntity {
     private List<String> defaultTechStack = new ArrayList<>();
 
     @Column(name = "max_projects")
+    @Builder.Default
     private int maxProjects = 50;
 
     @Column(name = "max_concurrent_workflows")
+    @Builder.Default
     private int maxConcurrentWorkflows = 10;
 
     @Column(name = "storage_limit_gb")
+    @Builder.Default
     private int storageLimitGb = 5;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
+    @Builder.Default
     private WorkspaceStatus status = WorkspaceStatus.ACTIVE;
 
     @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)

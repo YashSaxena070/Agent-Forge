@@ -38,12 +38,15 @@ public class WorkspaceMember extends BaseEntity {
     private MemberRole role;
 
     @Column(name = "status", length = 20)
+    @Builder.Default
     private String status = "active";
 
     @Column(name = "custom_permissions", columnDefinition = "jsonb")
+    @Builder.Default
     private String customPermissionsJson = "[]";
 
     @Column(name = "joined_at", nullable = false)
+    @Builder.Default
     private LocalDateTime joinedAt = LocalDateTime.now();
 
     @Column(name = "invited_by", columnDefinition = "uuid")

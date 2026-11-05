@@ -77,6 +77,7 @@ public class AuditLog extends BaseEntity {
     private String detailsJson;
 
     @Column(name = "risk_score")
+    @Builder.Default
     private int riskScore = 0;
 
     @Column(name = "risk_factors", columnDefinition = "jsonb")

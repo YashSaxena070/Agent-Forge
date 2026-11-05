@@ -44,6 +44,7 @@ public class WorkspaceInvitation extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
+    @Builder.Default
     private String status = "pending";
 
     @Column(name = "accepted_at")
