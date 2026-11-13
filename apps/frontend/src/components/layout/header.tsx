@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Bell, Search, User, LogOut, Menu } from 'lucide-react';
+import { Moon, Sun, Bell, Search, User, LogOut, Menu, Settings } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useState } from 'react';
 import {

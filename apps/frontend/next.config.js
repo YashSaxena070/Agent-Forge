@@ -20,6 +20,13 @@ const nextConfig = {
     ];
   },
   webpack(config) {
+    // Resolve path aliases for TypeScript `paths` configuration
+    const path = require('path');
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@/': path.resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, 'src'),
+    };
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
