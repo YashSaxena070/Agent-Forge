@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Dict, List, Optional, Type, TypeVar
 
-import instructor
+import instruc*tor
 from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 from pydantic import BaseModel, ValidationError

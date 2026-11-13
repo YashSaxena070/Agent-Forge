@@ -169,7 +169,7 @@ services:
 
   # Object Storage
   minio:
-    image: minio/minio:RELEASE.2024-05-15T00-14-32Z
+    image: cgr.dev/chainguard/minio:latest
     container_name: agentforge-minio
     command: server /data --console-address ":9001"
     ports:
@@ -180,11 +180,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-agentforge_dev}
     volumes:
       - minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - agentforge-network
 
@@ -313,7 +308,7 @@ services:
       temporal:
         condition: service_healthy
       minio:
-        condition: service_healthy
+        condition: service_started
       otel-collector:
         condition: service_started
     volumes:
